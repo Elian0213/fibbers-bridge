@@ -31,7 +31,8 @@ the Fibbers cards. This is the "generic API" part: anyone's dashboard can use it
                                 ▼
         device_registry → apple_tv config entry
                                 ▼
-             hass.data["apple_tv"][entry_id].atv     ← live pyatv object
+             entry.runtime_data.atv                  ← live pyatv object
+             (fallback: hass.data["apple_tv"][entry_id].atv, pre-2024.6)
                                 ▼
                  atv.touch.swipe / action / click     ← Companion protocol → Apple TV
 ```
@@ -40,10 +41,13 @@ the Fibbers cards. This is the "generic API" part: anyone's dashboard can use it
 
 The core `apple_tv` integration already pairs and holds a live `pyatv` connection.
 Rather than pair a second Companion session, Fibbers Bridge **borrows** it:
-`device_id` → the device's `apple_tv` config entry → `hass.data["apple_tv"][entry_id].atv`.
+`device_id` → the device's `apple_tv` config entry → `entry.runtime_data.atv`. Home
+Assistant 2024.6 moved the `AppleTVManager` onto the config entry's `runtime_data`;
+before that it lived at `hass.data["apple_tv"][entry_id]`, which we still fall back to.
 
-That is **internal API** of another integration — the `hass.data` shape isn't a public
-contract and can change between HA releases. So:
+That is **internal API** of another integration — neither the `runtime_data` object
+nor the `hass.data` shape is a public contract, and both can change between HA
+releases. So:
 
 - every access goes through `_resolve_atv()` and is wrapped;
 - capabilities are **feature-detected** (`atv.features.in_state(FeatureState.Available, FeatureName.Swipe)`);

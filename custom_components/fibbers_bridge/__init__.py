@@ -12,8 +12,9 @@ touch surface — e.g. a continuous timeline scrub in apps like Netflix that rep
 no position to Home Assistant, which `media_player.media_seek` therefore cannot do.
 
 We reach the live pyatv object through the core `apple_tv` integration's config
-entry (`hass.data["apple_tv"][entry_id].atv`). That is an internal API and may
-shift between Home Assistant releases, so every access is guarded and fails with a
+entry (`entry.runtime_data.atv`, with a fallback to the pre-2024.6
+`hass.data["apple_tv"][entry_id].atv`). That is an internal API and may shift
+between Home Assistant releases, so every access is guarded and fails with a
 clear error instead of raising.
 """
 
@@ -103,21 +104,34 @@ def _resolve_atv(hass: HomeAssistant, device_id: str) -> Any:
     """Return the connected pyatv object for an `apple_tv` device_id, or raise.
 
     Walks device_registry → the device's `apple_tv` config entries →
-    `hass.data["apple_tv"][entry_id].atv`. Raises ServiceValidationError with a
+    `entry.runtime_data.atv` (falling back to the legacy
+    `hass.data["apple_tv"][entry_id].atv`). Raises ServiceValidationError with a
     user-facing message when the device, integration, or live connection is absent.
     """
     device = dr.async_get(hass).async_get(device_id)
     if device is None:
         raise ServiceValidationError(f"Unknown device_id: {device_id}")
 
-    managers = hass.data.get(APPLE_TV_DOMAIN)
-    if not managers:
+    # Home Assistant 2024.6+ keeps the AppleTVManager on the config entry
+    # (`entry.runtime_data`); older cores used `hass.data["apple_tv"][entry_id]`.
+    # Both are internal API, so try each and fail with a clear message.
+    legacy = hass.data.get(APPLE_TV_DOMAIN)
+    if not isinstance(legacy, dict):
+        legacy = {}
+
+    entries = hass.config_entries.async_entries(APPLE_TV_DOMAIN)
+    if not entries and not legacy:
         raise ServiceValidationError(
             "The Apple TV integration is not set up in Home Assistant."
         )
 
     for entry_id in device.config_entries:
-        manager = managers.get(entry_id)
+        entry = hass.config_entries.async_get_entry(entry_id)
+        if entry is not None and entry.domain != APPLE_TV_DOMAIN:
+            continue
+        manager = getattr(entry, "runtime_data", None) if entry is not None else None
+        if manager is None:
+            manager = legacy.get(entry_id)
         atv = getattr(manager, "atv", None) if manager is not None else None
         if atv is not None:
             return atv

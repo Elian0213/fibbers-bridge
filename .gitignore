@@ -9,6 +9,9 @@ venv/
 .ruff_cache/
 .pytest_cache/
 
+# Chrome-extension feedback drop (local only)
+/pigeon-post/
+
 # Editors / OS
 .vscode/
 .idea/

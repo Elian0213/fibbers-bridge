@@ -11,7 +11,8 @@ that any card or automation can call.
   (`atv_swipe`/`atv_touch`/`atv_click`) and websocket commands
   (`fibbers_bridge/atv_swipe`, `.../atv_touch`) once, in `async_setup_entry`.
   Handlers resolve a `device_id` → the core `apple_tv` config entry →
-  `hass.data["apple_tv"][entry_id].atv` (the live pyatv object), then call
+  `entry.runtime_data.atv` (the live pyatv object; legacy fallback
+  `hass.data["apple_tv"][entry_id].atv` for pre-2024.6 cores), then call
   `atv.touch.*`. That path is **internal API** of another integration, so every
   access is wrapped and feature-detected — it must degrade to a clear error, never
   raise into Home Assistant.
@@ -44,7 +45,9 @@ options get new *optional* fields. See `docs/API.md` for the versioning policy.
 
 ## Home Assistant gotchas
 
-- `hass.data["apple_tv"]` shape is not a public API — guard it (see `_resolve_atv`).
+- The Apple TV manager lives on `entry.runtime_data` (HA 2024.6+); older cores put
+  it at `hass.data["apple_tv"][entry_id]`. Neither is a public API — guard both and
+  keep the legacy fallback (see `_resolve_atv`).
 - pyatv touch requires the **Companion** protocol (tvOS 15+); MRP-only devices won't
   have `atv.touch`. Feature-detect with `atv.features.in_state(...)`.
 - Keep `manifest.json` `version` in sync with the git tag on release.
