@@ -1,0 +1,112 @@
+atv_swipe:
+  name: Apple TV swipe
+  description: >-
+    Swipe on the Apple TV's touch surface (pyatv Companion protocol). Coordinates
+    are 0-1000 on both axes. Reproduces the physical Siri Remote's touch swipe -
+    e.g. scrubbing the timeline in apps like Netflix that report no position to
+    Home Assistant.
+  fields:
+    device_id:
+      name: Apple TV
+      description: The Apple TV device to control.
+      required: true
+      selector:
+        device:
+          integration: apple_tv
+    start_x:
+      name: Start X
+      description: Horizontal start position (0 = left, 1000 = right).
+      required: true
+      example: 500
+      selector:
+        number: { min: 0, max: 1000, mode: box }
+    start_y:
+      name: Start Y
+      description: Vertical start position (0 = top, 1000 = bottom).
+      required: true
+      example: 500
+      selector:
+        number: { min: 0, max: 1000, mode: box }
+    end_x:
+      name: End X
+      description: Horizontal end position.
+      required: true
+      example: 800
+      selector:
+        number: { min: 0, max: 1000, mode: box }
+    end_y:
+      name: End Y
+      description: Vertical end position.
+      required: true
+      example: 500
+      selector:
+        number: { min: 0, max: 1000, mode: box }
+    duration_ms:
+      name: Duration
+      description: Swipe duration in milliseconds.
+      example: 400
+      default: 500
+      selector:
+        number: { min: 1, max: 10000, unit_of_measurement: ms, mode: box }
+
+atv_touch:
+  name: Apple TV touch
+  description: >-
+    Send a single touch action (press / hold / release) at a point on the Apple
+    TV's touch surface. Chain press -> release yourself for a custom gesture.
+  fields:
+    device_id:
+      name: Apple TV
+      description: The Apple TV device to control.
+      required: true
+      selector:
+        device:
+          integration: apple_tv
+    x:
+      name: X
+      description: Horizontal position (0-1000).
+      required: true
+      example: 500
+      selector:
+        number: { min: 0, max: 1000, mode: box }
+    y:
+      name: Y
+      description: Vertical position (0-1000).
+      required: true
+      example: 500
+      selector:
+        number: { min: 0, max: 1000, mode: box }
+    mode:
+      name: Mode
+      description: The touch phase to send.
+      required: true
+      selector:
+        select:
+          options:
+            - press
+            - hold
+            - release
+
+atv_click:
+  name: Apple TV click
+  description: >-
+    Click the Apple TV's touch surface (a select), as a single tap, double tap,
+    or long hold.
+  fields:
+    device_id:
+      name: Apple TV
+      description: The Apple TV device to control.
+      required: true
+      selector:
+        device:
+          integration: apple_tv
+    action:
+      name: Action
+      description: The kind of click.
+      default: single
+      selector:
+        select:
+          options:
+            - single
+            - double
+            - hold

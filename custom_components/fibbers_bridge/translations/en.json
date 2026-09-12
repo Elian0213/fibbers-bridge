@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fibbers Bridge",
+        "description": "Add Fibbers Bridge. It exposes reusable services (Apple TV native touch, with more to come) that any card or automation can call. There's nothing to configure."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Fibbers Bridge is already configured; only one instance is needed."
+    }
+  },
+  "services": {
+    "atv_swipe": {
+      "name": "Apple TV swipe",
+      "description": "Swipe on the Apple TV's touch surface (0-1000 coordinates) via the Companion protocol.",
+      "fields": {
+        "device_id": { "name": "Apple TV", "description": "The Apple TV device to control." },
+        "start_x": { "name": "Start X", "description": "Horizontal start position (0-1000)." },
+        "start_y": { "name": "Start Y", "description": "Vertical start position (0-1000)." },
+        "end_x": { "name": "End X", "description": "Horizontal end position (0-1000)." },
+        "end_y": { "name": "End Y", "description": "Vertical end position (0-1000)." },
+        "duration_ms": { "name": "Duration", "description": "Swipe duration in milliseconds." }
+      }
+    },
+    "atv_touch": {
+      "name": "Apple TV touch",
+      "description": "Send a single press / hold / release at a point on the Apple TV's touch surface.",
+      "fields": {
+        "device_id": { "name": "Apple TV", "description": "The Apple TV device to control." },
+        "x": { "name": "X", "description": "Horizontal position (0-1000)." },
+        "y": { "name": "Y", "description": "Vertical position (0-1000)." },
+        "mode": { "name": "Mode", "description": "The touch phase to send." }
+      }
+    },
+    "atv_click": {
+      "name": "Apple TV click",
+      "description": "Click the Apple TV's touch surface as a single tap, double tap, or hold.",
+      "fields": {
+        "device_id": { "name": "Apple TV", "description": "The Apple TV device to control." },
+        "action": { "name": "Action", "description": "The kind of click." }
+      }
+    }
+  }
+}
