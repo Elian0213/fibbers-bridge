@@ -1,0 +1,3 @@
+# Test-only deps. pytest-homeassistant-custom-component pins a matching
+# homeassistant + pytest + pytest-asyncio, so we don't pin those ourselves.
+pytest-homeassistant-custom-component

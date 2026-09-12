@@ -30,11 +30,18 @@ There's no build step (pure Python + YAML/JSON).
 
 ```bash
 python -m py_compile custom_components/fibbers_bridge/*.py   # syntax
+
+pip install -r requirements-test.txt                        # test deps
+pytest -q                                                    # unit tests
 ```
 
-The **Validate** workflow runs on every push: `hacs/action` (integration category)
-and Home Assistant's `hassfest`. Both must pass. Full behaviour can only be verified
-on a real Home Assistant with a Companion-paired Apple TV — call
+The tests use `pytest-homeassistant-custom-component`, which pulls a matching Home
+Assistant. HA is Linux-first (its runner imports `fcntl`) and 2026.3+ needs Python
+3.14, so run the suite on Linux/macOS with Python 3.14 — it won't import on Windows.
+
+The **Validate** workflow runs on every push: `hacs/action` (integration category),
+Home Assistant's `hassfest`, and the `pytest` suite. All must pass. Full behaviour can
+only be verified on a real Home Assistant with a Companion-paired Apple TV — call
 `fibbers_bridge.atv_swipe` from Developer Tools and watch the TV.
 
 ## The contract is a promise

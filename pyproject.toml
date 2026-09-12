@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+# The HA test harness drives everything through asyncio; auto mode means we don't
+# have to decorate every coroutine test with @pytest.mark.asyncio.
+asyncio_mode = "auto"
+testpaths = ["tests"]

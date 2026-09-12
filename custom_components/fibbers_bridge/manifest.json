@@ -10,5 +10,5 @@
   "issue_tracker": "https://github.com/Elian0213/fibbers-bridge/issues",
   "requirements": ["pyatv==0.18.0"],
   "single_config_entry": true,
-  "version": "0.1.1"
+  "version": "0.1.2"
 }

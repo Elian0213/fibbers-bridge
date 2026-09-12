@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] — 2026-09-12
+
+### Added
+
+- **Test suite + CI guard for `_resolve_atv`.** A `pytest-homeassistant-custom-component`
+  harness (`tests/`) exercises both Apple TV resolution paths — the HA 2024.6+
+  `entry.runtime_data` path and the legacy `hass.data["apple_tv"]` fallback — plus the
+  domain filter and the "not set up" / "no connected Apple TV" / unknown-device error
+  cases. A new `tests` job in the Validate workflow runs it on every push, so the
+  regression that broke 0.1.0 (core moving the manager off `hass.data`) is now caught by
+  CI instead of by users. No runtime behaviour change.
+
 ## [0.1.1] — 2026-09-12
 
 ### Fixed

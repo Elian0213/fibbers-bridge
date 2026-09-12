@@ -8,6 +8,12 @@ Rough and subject to change — the point is the direction, not the dates.
 - Custom-repository installable; HACS + hassfest validation green.
 
 ## Next
+- **Zero-touch setup (YAML import).** Add a `fibbers_bridge:` config-schema + import
+  flow so declaring the key in `configuration.yaml` auto-creates the config entry on
+  restart — no clicking through Devices & Services. (A standalone custom integration
+  can't self-register without *some* trigger — a config entry or a YAML key — so a true
+  "download + restart, done" isn't possible; this is the closest correct mechanism. The
+  one-click UI stays.) Pending live verification via the Chrome extension.
 - **Fibbers card tie-in (cross-repo).** The Fibbers remote touchpad gets a
   config-driven hook that streams its drag to `fibbers_bridge/atv_swipe`, so a slide
   on the phone scrubs Netflix's own timeline for real — feature-detected, falling back
