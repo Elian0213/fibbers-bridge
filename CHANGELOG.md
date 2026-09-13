@@ -3,6 +3,25 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-09-13
+
+### Added
+
+- **`fibbers_bridge.tv_probe_settings`.** A read-only capability probe: asks a
+  paired Philips TV what its JointSpace API really serves, ignoring what it
+  advertises in `jsonfeatures`. Returns the HTTP status of each endpoint, so
+  *not implemented* (404), *refused* (401/403) and *present but unadvertised*
+  (200) stay distinguishable — `getReq` flattens all three to `None`, which is
+  right in the sync loop and useless in a diagnostic. Where the settings tree
+  exists, it also reports the addressable node ids, which is what
+  `menuitems/settings/update` needs to set brightness or a picture profile.
+
+  Motivation: Titan OS sets (`os_type: "Linux"`) advertise a far thinner API than
+  the Android ones — on a 43PUS7608/12 the list is `recordings`, `textentry`,
+  `inputkey`, `pointer`, `activities`, `alexa`, with no `menuitems` and no
+  `ambilight`. Philips has previous form for serving unadvertised endpoints, so
+  the absence of a flag is worth testing rather than trusting.
+
 ## [0.2.1] — 2026-09-13
 
 ### Fixed

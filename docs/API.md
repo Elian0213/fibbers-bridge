@@ -109,6 +109,54 @@ Runtime errors: an unknown/un-paired source, or a target that can't accept an
 
 ---
 
+## TV capability probe
+
+`fibbers_bridge.tv_probe_settings` — `{ entry_id, include_raw? }`, **returns a
+response**. Read-only: it changes nothing on the TV.
+
+Philips advertises what its API serves in `system.featuring.jsonfeatures`, and
+`ha-philipsjs` gates most calls on that. Titan OS sets (`os_type: "Linux"`, 2023+)
+publish a much thinner list than the Android ones — usually no `menuitems` (the
+settings tree behind picture style, brightness and contrast) and no `ambilight`.
+Philips has form for serving endpoints it doesn't advertise, so this probe ignores
+the advertisement and asks the TV directly.
+
+The value is in the status codes, which `getReq` otherwise collapses to `None`:
+
+| `verdict` | Status | Means |
+| --- | --- | --- |
+| `available` | 200 | present, possibly unadvertised — usable via the library's `force=True` |
+| `not_implemented` | 404 | this firmware genuinely lacks it |
+| `forbidden` | 401/403 | implemented but refused — a pairing problem, not a missing feature |
+| `unreachable` | — | no answer; TV asleep or off the network |
+
+```jsonc
+{
+  "host": "192.168.1.159", "name": "43PUS7608/12", "os_type": "Linux",
+  "advertised": { "jsonfeatures": { ... }, "systemfeatures": { ... } },
+  "menuitems_advertised": false,
+  "endpoints": {
+    "menuitems/settings/structure": {
+      "status": 404, "verdict": "not_implemented",
+      "purpose": "Settings tree — picture style/profile, brightness, contrast, colour"
+    }
+    // ambilight/supportedstyles, ambilight/currentconfiguration, ambilight/power,
+    // ambilight/topology, screenshot, applications
+  },
+  "settings_available": false,
+  "settings_nodes": 0,
+  "settings_nodes_sample": [],   // { node_id, type, context, string_id }, capped at 25
+  "summary": "This firmware does not implement the settings tree (404). ..."
+}
+```
+
+A node in `settings_nodes_sample` is what `menuitems/settings/current` reads and
+`menuitems/settings/update` writes — so a non-empty list is the green light for
+building brightness/picture-profile control. Pass `include_raw: true` for the
+complete tree (large).
+
+---
+
 ## Discovery / feature detection
 
 Check before you offer the feature, so your card degrades cleanly when the bridge

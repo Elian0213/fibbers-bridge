@@ -185,3 +185,29 @@ ambilight_probe:
           options:
             - processed
             - measured
+
+tv_probe_settings:
+  name: Probe TV settings API
+  description: >-
+    Ask a paired Philips TV what its JointSpace API really serves, ignoring what
+    it advertises. Reports the HTTP status of each endpoint - so "not
+    implemented" (404), "refused" (403) and "present but unadvertised" (200) stay
+    telling apart - plus the addressable settings nodes if the settings tree
+    exists. Read-only; changes nothing on the TV. Use it to find out whether
+    brightness and picture profiles can be controlled on your model.
+  fields:
+    entry_id:
+      name: Philips Ambilight TV
+      description: The paired TV to probe.
+      required: true
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+    include_raw:
+      name: Include raw structure
+      description: >-
+        Return the complete settings tree as well as the summary. Large - leave
+        off unless you need the full node list.
+      default: false
+      selector:
+        boolean:

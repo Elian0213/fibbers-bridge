@@ -145,6 +145,20 @@ class AmbilightSource:
         await self._client.setTransport(self._client.secured_transport)
         self._transport_ready = True
 
+    @property
+    def client(self) -> Any:
+        """The underlying ha-philipsjs client.
+
+        Exposed so `tvprobe` can question the TV directly about endpoints the
+        library gates behind a feature advertisement. Read-only use only — the
+        sync loop owns this client's transport state.
+        """
+        return self._client
+
+    async def ensure_transport(self) -> None:
+        """Pin the negotiated scheme/api-version, for callers outside this class."""
+        await self._ensure_transport()
+
     async def read_color(self, mode: str = DEFAULT_MODE) -> RGB | None:
         """Read the current averaged Ambilight colour, or None if unavailable."""
         try:

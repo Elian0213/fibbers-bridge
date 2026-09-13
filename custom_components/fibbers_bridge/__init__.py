@@ -48,6 +48,7 @@ from .ambilight import (
     stop_all_syncs,
     stop_sync,
 )
+from .tvprobe import probe_capabilities
 from .const import (
     AMBILIGHT_MODES,
     APPLE_TV_DOMAIN,
@@ -72,6 +73,10 @@ _AMBILIGHT_STOP_FIELDS = {vol.Required("target"): cv.entity_id}
 _AMBILIGHT_PROBE_FIELDS = {
     vol.Required("entry_id"): cv.string,
     vol.Optional("mode", default=DEFAULT_MODE): vol.In(AMBILIGHT_MODES),
+}
+_TV_PROBE_FIELDS = {
+    vol.Required("entry_id"): cv.string,
+    vol.Optional("include_raw", default=False): cv.boolean,
 }
 
 _LOGGER = logging.getLogger(__name__)
@@ -165,6 +170,10 @@ def _register_global(hass: HomeAssistant) -> None:
         source = get_source(hass, call.data["entry_id"])
         return await source.probe(call.data["mode"])
 
+    async def _svc_tv_probe_settings(call: ServiceCall) -> ServiceResponse:
+        source = get_source(hass, call.data["entry_id"])
+        return await probe_capabilities(source, include_raw=call.data["include_raw"])
+
     hass.services.async_register(
         DOMAIN, "atv_swipe", _svc_swipe, schema=vol.Schema(_SWIPE_FIELDS)
     )
@@ -191,6 +200,13 @@ def _register_global(hass: HomeAssistant) -> None:
         "ambilight_probe",
         _svc_ambilight_probe,
         schema=vol.Schema(_AMBILIGHT_PROBE_FIELDS),
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "tv_probe_settings",
+        _svc_tv_probe_settings,
+        schema=vol.Schema(_TV_PROBE_FIELDS),
         supports_response=SupportsResponse.ONLY,
     )
 

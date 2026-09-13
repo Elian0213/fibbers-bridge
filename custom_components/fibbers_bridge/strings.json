@@ -89,6 +89,14 @@
         "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to read from." },
         "mode": { "name": "Colour source", "description": "Which layer to read." }
       }
+    },
+    "tv_probe_settings": {
+      "name": "Probe TV settings API",
+      "description": "Ask a paired Philips TV what its JointSpace API really serves, ignoring what it advertises. Read-only.",
+      "fields": {
+        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to probe." },
+        "include_raw": { "name": "Include raw structure", "description": "Return the complete settings tree as well as the summary." }
+      }
     }
   }
 }
