@@ -155,6 +155,48 @@ A node in `settings_nodes_sample` is what `menuitems/settings/current` reads and
 building brightness/picture-profile control. Pass `include_raw: true` for the
 complete tree (large).
 
+Where the node ids come from, and why Titan OS lies about them:
+[`docs/TITANOS.md`](TITANOS.md).
+
+---
+
+## TV settings (Ambilight brightness, styles, ambisleep)
+
+Read and write a paired TV's settings tree without hardcoding node ids. Titan OS
+serves Ambilight settings but not picture ones — see [`docs/TITANOS.md`](TITANOS.md).
+
+`fibbers_bridge.tv_settings_list` / `fibbers_bridge/tv_settings_list` —
+`{ entry_id, refresh? }`, **returns a response**. One call renders a card: labels
+and ranges from the structure, values and availability merged in from current.
+
+```jsonc
+{
+  "host": "192.168.1.159", "name": "43PUS7608/12", "version": 4,
+  "ambilight": { "power": "On", "leds": 0 },   // leds 0 = no strip attached
+  "controls": [
+    { "node_id": 710, "kind": "slider", "context": "ambilight_brightness",
+      "parent_context": "ambilight_advanced", "min": 0, "max": 100, "step": 1,
+      "value": 40, "controllable": true, "available": true },
+    { "node_id": 320, "kind": "enum", "context": "ambilight_follow_video",
+      "parent_context": "ambilight_style",
+      "options": [ { "enum_id": 1, "string_id": "...", "controllable": true } ],
+      "value": 1 }
+  ],
+  "groups": ["ambilight_style", "ambilight_advanced", "ambisleep"]
+}
+```
+
+`kind` is one of `slider | enum | colors | int | bool | multi_slider` (the last
+read-only). A node missing from the current read still ships with `value: null`,
+`available: false`.
+
+`fibbers_bridge.tv_settings_get` — `{ entry_id, node_ids: [int] }` → `{ nodes: [...] }`.
+
+`fibbers_bridge.tv_settings_set` — `{ entry_id, node_id, value? , data? }`,
+**returns** `{ node_id, changed, before, after, note }`. The TV answers OK to
+writes it ignores, so trust **`changed`**, not the call — a card must revert an
+optimistic update when `changed` is false.
+
 Bodies are parsed by content type, not size: JSON up to 1 MB is parsed and mined
 for node ids, non-JSON never is. A parsed body over 4 KB is dropped from the
 response and flagged `json_omitted: true` — it still counts towards

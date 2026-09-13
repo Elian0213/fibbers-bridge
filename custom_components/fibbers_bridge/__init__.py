@@ -48,6 +48,8 @@ from .ambilight import (
     stop_all_syncs,
     stop_sync,
 )
+from . import tvsettings
+from .jointspace import JointSpaceError
 from .tvprobe import probe_capabilities
 from .const import (
     AMBILIGHT_MODES,
@@ -77,6 +79,20 @@ _AMBILIGHT_PROBE_FIELDS = {
 _TV_PROBE_FIELDS = {
     vol.Required("entry_id"): cv.string,
     vol.Optional("include_raw", default=False): cv.boolean,
+}
+_TV_SETTINGS_LIST_FIELDS = {
+    vol.Required("entry_id"): cv.string,
+    vol.Optional("refresh", default=False): cv.boolean,
+}
+_TV_SETTINGS_GET_FIELDS = {
+    vol.Required("entry_id"): cv.string,
+    vol.Required("node_ids"): [vol.Coerce(int)],
+}
+_TV_SETTINGS_SET_FIELDS = {
+    vol.Required("entry_id"): cv.string,
+    vol.Required("node_id"): vol.Coerce(int),
+    vol.Optional("value"): object,  # any JSON scalar/list the node takes
+    vol.Optional("data"): dict,
 }
 
 _LOGGER = logging.getLogger(__name__)
@@ -174,6 +190,30 @@ def _register_global(hass: HomeAssistant) -> None:
         source = get_source(hass, call.data["entry_id"])
         return await probe_capabilities(source, include_raw=call.data["include_raw"])
 
+    async def _svc_tv_settings_list(call: ServiceCall) -> ServiceResponse:
+        source = get_source(hass, call.data["entry_id"])
+        try:
+            return await tvsettings.list_settings(source, refresh=call.data["refresh"])
+        except JointSpaceError as err:
+            raise HomeAssistantError(str(err)) from err
+
+    async def _svc_tv_settings_get(call: ServiceCall) -> ServiceResponse:
+        source = get_source(hass, call.data["entry_id"])
+        try:
+            current = await tvsettings.read_current(source, call.data["node_ids"])
+        except JointSpaceError as err:
+            raise HomeAssistantError(str(err)) from err
+        return {"nodes": list(current.values())}
+
+    async def _svc_tv_settings_set(call: ServiceCall) -> ServiceResponse:
+        source = get_source(hass, call.data["entry_id"])
+        try:
+            return await tvsettings.write_node(
+                source, call.data["node_id"], call.data.get("value"), call.data.get("data")
+            )
+        except JointSpaceError as err:
+            raise HomeAssistantError(str(err)) from err
+
     hass.services.async_register(
         DOMAIN, "atv_swipe", _svc_swipe, schema=vol.Schema(_SWIPE_FIELDS)
     )
@@ -209,11 +249,35 @@ def _register_global(hass: HomeAssistant) -> None:
         schema=vol.Schema(_TV_PROBE_FIELDS),
         supports_response=SupportsResponse.ONLY,
     )
+    hass.services.async_register(
+        DOMAIN,
+        "tv_settings_list",
+        _svc_tv_settings_list,
+        schema=vol.Schema(_TV_SETTINGS_LIST_FIELDS),
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "tv_settings_get",
+        _svc_tv_settings_get,
+        schema=vol.Schema(_TV_SETTINGS_GET_FIELDS),
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "tv_settings_set",
+        _svc_tv_settings_set,
+        schema=vol.Schema(_TV_SETTINGS_SET_FIELDS),
+        supports_response=SupportsResponse.ONLY,
+    )
 
     websocket_api.async_register_command(hass, _ws_swipe)
     websocket_api.async_register_command(hass, _ws_touch)
     websocket_api.async_register_command(hass, _ws_ambilight_subscribe)
     websocket_api.async_register_command(hass, _ws_ambilight_sources)
+    websocket_api.async_register_command(hass, _ws_tv_settings_list)
+    websocket_api.async_register_command(hass, _ws_tv_settings_get)
+    websocket_api.async_register_command(hass, _ws_tv_settings_set)
 
     store["registered"] = True
     _LOGGER.debug("Fibbers Bridge: services + websocket commands registered")
@@ -422,3 +486,76 @@ def _ws_ambilight_sources(
 ) -> None:
     """Return the paired Philips Ambilight TVs, for the card's source picker."""
     connection.send_result(msg["id"], {"sources": list_sources(hass)})
+
+
+# --- TV settings websocket commands --------------------------------------------
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "fibbers_bridge/tv_settings_list",
+        vol.Required("entry_id"): cv.string,
+        vol.Optional("refresh", default=False): cv.boolean,
+    }
+)
+@websocket_api.async_response
+async def _ws_tv_settings_list(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    try:
+        source = get_source(hass, msg["entry_id"])
+        result = await tvsettings.list_settings(source, refresh=msg["refresh"])
+    except (HomeAssistantError, JointSpaceError) as err:
+        connection.send_error(msg["id"], "fibbers_bridge_error", str(err))
+        return
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "fibbers_bridge/tv_settings_get",
+        vol.Required("entry_id"): cv.string,
+        vol.Required("node_ids"): [vol.Coerce(int)],
+    }
+)
+@websocket_api.async_response
+async def _ws_tv_settings_get(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    try:
+        source = get_source(hass, msg["entry_id"])
+        current = await tvsettings.read_current(source, msg["node_ids"])
+    except (HomeAssistantError, JointSpaceError) as err:
+        connection.send_error(msg["id"], "fibbers_bridge_error", str(err))
+        return
+    connection.send_result(msg["id"], {"nodes": list(current.values())})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "fibbers_bridge/tv_settings_set",
+        vol.Required("entry_id"): cv.string,
+        vol.Required("node_id"): vol.Coerce(int),
+        vol.Optional("value"): object,
+        vol.Optional("data"): dict,
+    }
+)
+@websocket_api.async_response
+async def _ws_tv_settings_set(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    try:
+        source = get_source(hass, msg["entry_id"])
+        result = await tvsettings.write_node(
+            source, msg["node_id"], msg.get("value"), msg.get("data")
+        )
+    except (HomeAssistantError, JointSpaceError) as err:
+        connection.send_error(msg["id"], "fibbers_bridge_error", str(err))
+        return
+    connection.send_result(msg["id"], result)

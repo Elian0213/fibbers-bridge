@@ -140,6 +140,7 @@ class AmbilightSource:
         self.last_color: RGB | None = None
         self.last_error: str | None = None
         self.available: bool = True
+        self._structure: dict[str, Any] | None = None
 
     async def _ensure_transport(self) -> None:
         if self._transport_ready:
@@ -162,6 +163,21 @@ class AmbilightSource:
     async def ensure_transport(self) -> None:
         """Pin the negotiated scheme/api-version, for callers outside this class."""
         await self._ensure_transport()
+
+    async def settings_structure(self, *, refresh: bool = False) -> dict[str, Any] | None:
+        """The settings tree, cached once fetched (static per firmware); retried while None."""
+        from . import jointspace  # noqa: PLC0415 - avoid import cycle at module load
+
+        if self._structure is not None and not refresh:
+            return self._structure
+        try:
+            self._structure = await jointspace.request_json(
+                self, "GET", "menuitems/settings/structure"
+            )
+        except jointspace.JointSpaceError as err:
+            _LOGGER.debug("settings structure fetch failed for %s: %s", self.host, err)
+            self._structure = None
+        return self._structure
 
     async def read_color(self, mode: str = DEFAULT_MODE) -> RGB | None:
         """Read the current averaged Ambilight colour, or None if unavailable."""

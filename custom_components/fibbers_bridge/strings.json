@@ -97,6 +97,32 @@
         "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to probe." },
         "include_raw": { "name": "Include raw structure", "description": "Return the complete settings tree as well as the summary." }
       }
+    },
+    "tv_settings_list": {
+      "name": "List TV settings",
+      "description": "Read a paired Philips TV's settings tree and current values as one list a card can render.",
+      "fields": {
+        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to read from." },
+        "refresh": { "name": "Refresh structure", "description": "Re-fetch the settings tree instead of using the cached one." }
+      }
+    },
+    "tv_settings_get": {
+      "name": "Get TV setting values",
+      "description": "Read current values for specific settings node ids.",
+      "fields": {
+        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to read from." },
+        "node_ids": { "name": "Node ids", "description": "The settings node ids to read." }
+      }
+    },
+    "tv_settings_set": {
+      "name": "Set a TV setting",
+      "description": "Write one settings node and confirm it by reading it back (see `changed`).",
+      "fields": {
+        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to write to." },
+        "node_id": { "name": "Node id", "description": "The settings node to write." },
+        "value": { "name": "Value", "description": "The new value (number, option id, or colour int)." },
+        "data": { "name": "Raw data", "description": "Advanced: the exact update payload; overrides value." }
+      }
     }
   }
 }

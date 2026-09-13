@@ -3,6 +3,31 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] — 2026-09-13
+
+### Added
+
+- **TV settings, exposed to cards.** `tv_settings_list` reads a paired Philips
+  TV's settings tree and current values as one list a card can render — Ambilight
+  brightness, saturation, styles, wall colour, ambisleep — with `tv_settings_get`
+  and `tv_settings_set` alongside (services and websocket commands). Structure and
+  values come from two endpoints and are merged; labels/ranges from the tree,
+  values/availability from the read.
+- **Direct JointSpace calls** (`jointspace.py`): the library gates every
+  `menuitems`/`ambilight` call on a feature list Titan OS doesn't publish, and
+  folds errors into `None`. These go through the client's authenticated session
+  and keep the real status code.
+- **`docs/TITANOS.md`.** What a Titan OS set actually serves — the 22-node tree,
+  the empty `picture` branch (so **Ambilight only, no picture profiles**), 403
+  meaning "not implemented", and the read/write shape mismatches.
+
+### Notes
+
+- `tv_settings_set` returns `changed`: the TV answers OK to writes it silently
+  ignores, so a caller confirms by read-back, not by the call succeeding.
+- Ambilight settings are fully populated even with no LED strip attached
+  (`topology` 0) — the settings act on nothing until a strip is connected.
+
 ## [0.3.1] — 2026-09-13
 
 ### Fixed

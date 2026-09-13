@@ -211,3 +211,80 @@ tv_probe_settings:
       default: false
       selector:
         boolean:
+
+tv_settings_list:
+  name: List TV settings
+  description: >-
+    Read a paired Philips TV's settings tree and current values as one list a
+    card can render - Ambilight brightness, saturation, styles, wall colour,
+    ambisleep. Returns a response.
+  fields:
+    entry_id:
+      name: Philips Ambilight TV
+      description: The paired TV to read from.
+      required: true
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+    refresh:
+      name: Refresh structure
+      description: Re-fetch the settings tree instead of using the cached one.
+      default: false
+      selector:
+        boolean:
+
+tv_settings_get:
+  name: Get TV setting values
+  description: Read current values for specific settings node ids. Returns a response.
+  fields:
+    entry_id:
+      name: Philips Ambilight TV
+      description: The paired TV to read from.
+      required: true
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+    node_ids:
+      name: Node ids
+      description: The settings node ids to read.
+      required: true
+      example: "[710, 720]"
+      selector:
+        object:
+
+tv_settings_set:
+  name: Set a TV setting
+  description: >-
+    Write one settings node and confirm it by reading it back. Returns a response
+    with `changed` - the TV answers OK to writes it silently ignores, so trust
+    `changed`, not the call.
+  fields:
+    entry_id:
+      name: Philips Ambilight TV
+      description: The paired TV to write to.
+      required: true
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+    node_id:
+      name: Node id
+      description: The settings node to write.
+      required: true
+      example: 710
+      selector:
+        number: { min: 0, max: 100000, mode: box }
+    value:
+      name: Value
+      description: >-
+        The new value - a number for a slider, the option id for a list, a colour
+        int for a colour node.
+      example: 60
+      selector:
+        object:
+    data:
+      name: Raw data
+      description: >-
+        Advanced: the exact update payload, when a node needs more than a single
+        value. Overrides `value`.
+      selector:
+        object:

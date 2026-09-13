@@ -79,8 +79,12 @@ snippet — is in **[docs/API.md](docs/API.md)**.
 | `fibbers_bridge.atv_swipe` | Swipe the touch surface (0–1000 coords) — continuous scrub, list traversal |
 | `fibbers_bridge.atv_touch` | One press / hold / release at a point (build custom gestures) |
 | `fibbers_bridge.atv_click` | Click the surface: single, double, or hold |
+| `fibbers_bridge.ambilight_start` / `_stop` | Mirror a Philips TV's Ambilight colour onto an RGB light |
+| `fibbers_bridge.tv_settings_list` / `_get` / `_set` | Read/write a Philips TV's Ambilight settings (brightness, styles, ambisleep) |
 
-Websocket equivalents: `fibbers_bridge/atv_swipe`, `fibbers_bridge/atv_touch`.
+Websocket equivalents exist for the streaming/low-latency ones. Full contract in
+**[docs/API.md](docs/API.md)**; Titan OS quirks and node ids in
+**[docs/TITANOS.md](docs/TITANOS.md)**.
 
 ## How it works
 
