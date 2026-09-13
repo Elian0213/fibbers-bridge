@@ -1,0 +1,25 @@
+meta:
+  model: "43PUS76*"
+  os_type: Linux
+  verified_on: "43PUS7608/12"
+  notes: "Titan OS forwards most keys to the active HDMI source; anchor via Home."
+
+macros:
+  picture_style:
+    description: Set the picture style (0-4).
+    # UNVERIFIED — the one replay attempt went wrong at step 2. Confirm by eye
+    # with a tv_macro run before trusting it.
+    verified: false
+    anchor: home
+    args:
+      index: { type: int, min: 0, max: 4 }
+    steps:
+      - { key: CursorUp, repeat: 2 }
+      - CursorRight
+      - { key: Confirm, settle_ms: 1200 }
+      - { key: Confirm, settle_ms: 1200 }
+      - { key: Confirm, settle_ms: 1200 }
+      - { key: CursorUp, repeat: 6 }
+      - Confirm
+      - select: { direction: down, index: "{{ index }}", length: 5, margin: 3 }
+      - Confirm

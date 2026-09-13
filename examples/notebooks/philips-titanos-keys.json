@@ -1,0 +1,24 @@
+{
+  "id": "philips-titanos-keys",
+  "name": "Philips Titan OS — key map",
+  "target": "remote.43pus7608_12_afstandsbediening",
+  "device": {
+    "Model": "43PUS7608/12 (internal TPN236E)",
+    "OS": "Titan OS (os_type: Linux)",
+    "JointSpace": "v6.1.0, secured_transport, digest_auth_pairing",
+    "Host": "192.168.1.159",
+    "Ambilight": "RGB header present, no strip (topology 0)",
+    "Transport": "remote.send_command -> remote.43pus7608_12_afstandsbediening"
+  },
+  "created": "2026-09-13T21:00:00Z",
+  "entries": [
+    {"id": "seed-01", "ts": "2026-09-13T21:01:00Z", "kind": "remote_key", "target": "TV", "stimulus": {"keys": ["VolumeUp"]}, "elapsed_ms": 0, "observation": "volume bar appears", "outcome": "works", "tags": ["hdmi-source-active"]},
+    {"id": "seed-02", "ts": "2026-09-13T21:01:10Z", "kind": "remote_key", "target": "TV", "stimulus": {"keys": ["Options"]}, "elapsed_ms": 0, "observation": "opens the Apple TV's CEC menu (Device Options / Controls / Device Info / Clock), not the TV's", "outcome": "works", "tags": ["cec"]},
+    {"id": "seed-03", "ts": "2026-09-13T21:01:20Z", "kind": "remote_key", "target": "TV", "stimulus": {"keys": ["Confirm"]}, "elapsed_ms": 0, "observation": "passes through to the HDMI source (paused/played Netflix)", "outcome": "works", "tags": ["passthrough"]},
+    {"id": "seed-04", "ts": "2026-09-13T21:01:30Z", "kind": "remote_key", "target": "TV", "stimulus": {"keys": ["Home"]}, "elapsed_ms": 0, "observation": "Titan OS home screen — the only key that reaches the TV's own UI; takes the screen off whatever is playing", "outcome": "works", "tags": ["anchor"]},
+    {"id": "seed-05", "ts": "2026-09-13T21:01:40Z", "kind": "remote_key", "target": "TV", "stimulus": {"keys": ["Back"]}, "elapsed_ms": 0, "observation": "returns from home to the previous source", "outcome": "works", "tags": []},
+    {"id": "seed-06", "ts": "2026-09-13T21:01:50Z", "kind": "remote_key", "target": "TV", "stimulus": {"keys": ["Adjust"]}, "elapsed_ms": 0, "observation": "dead on Titan OS (was the picture/sound key on older Philips)", "outcome": "nothing", "tags": []},
+    {"id": "seed-07", "ts": "2026-09-13T21:02:00Z", "kind": "remote_key", "target": "TV", "stimulus": {"keys": ["Viewmode"]}, "elapsed_ms": 0, "observation": "no change on a 16:9 source", "outcome": "nothing", "tags": []},
+    {"id": "seed-08", "ts": "2026-09-13T21:02:10Z", "kind": "note", "target": null, "stimulus": {}, "elapsed_ms": 0, "observation": "While an HDMI source is active, Titan OS forwards nearly every key to the connected device. Home is the exception, so any TV-side macro must anchor on Home.", "outcome": "unknown", "tags": ["finding"]}
+  ]
+}

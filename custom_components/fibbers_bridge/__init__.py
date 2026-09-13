@@ -48,17 +48,19 @@ from .ambilight import (
     stop_all_syncs,
     stop_sync,
 )
-from . import tvsettings
+from . import macros, probe, remote, tvsettings
 from .jointspace import JointSpaceError
 from .tvprobe import probe_capabilities
 from .const import (
     AMBILIGHT_MODES,
     APPLE_TV_DOMAIN,
+    DEFAULT_KEY_DELAY_MS,
     DEFAULT_MODE,
     DEFAULT_RATE_HZ,
     DOMAIN,
     MAX_RATE_HZ,
     MIN_RATE_HZ,
+    PROBE_OUTCOMES,
 )
 
 _PLATFORMS = ["sensor"]
@@ -99,6 +101,51 @@ _TV_SETTINGS_SWEEP_FIELDS = {
     vol.Required("start"): vol.Coerce(int),
     vol.Required("end"): vol.Coerce(int),
     vol.Optional("step", default=1): vol.All(vol.Coerce(int), vol.Range(min=1)),
+}
+
+# --- key sequences + macros ---
+_TV_SEND_KEYS_FIELDS = {
+    vol.Required("entry_id"): cv.string,
+    vol.Required("keys"): list,
+    vol.Optional("delay_ms", default=DEFAULT_KEY_DELAY_MS): vol.Coerce(int),
+    vol.Optional("settle_ms"): vol.Coerce(int),
+    vol.Optional("anchor"): vol.In(["home"]),
+}
+_TV_MACRO_FIELDS = {
+    vol.Required("entry_id"): cv.string,
+    vol.Required("macro"): cv.string,
+    vol.Optional("args"): dict,
+}
+_TV_MACRO_LIST_FIELDS = {vol.Required("entry_id"): cv.string}
+
+# --- probe journal ---
+_PROBE_CREATE_FIELDS = {
+    vol.Required("name"): cv.string,
+    vol.Optional("target"): cv.string,
+    vol.Optional("device"): dict,
+}
+_PROBE_DELETE_FIELDS = {vol.Required("notebook"): cv.string}
+_PROBE_FIRE_FIELDS = {
+    vol.Required("notebook"): cv.string,
+    vol.Required("kind"): vol.In(["remote_key", "service", "http"]),
+    vol.Optional("entry_id"): cv.string,
+    vol.Optional("target"): cv.string,
+    vol.Optional("stimulus", default=dict): dict,
+}
+_PROBE_ANNOTATE_FIELDS = {
+    vol.Required("notebook"): cv.string,
+    vol.Optional("id"): cv.string,
+    vol.Optional("observation"): cv.string,
+    vol.Optional("outcome"): vol.In(PROBE_OUTCOMES),
+    vol.Optional("tags"): [cv.string],
+}
+_PROBE_NOTE_FIELDS = {vol.Required("notebook"): cv.string, vol.Required("text"): cv.string}
+_PROBE_EXPORT_FIELDS = {vol.Required("notebook"): cv.string}
+_PROBE_PROMOTE_FIELDS = {
+    vol.Required("notebook"): cv.string,
+    vol.Required("name"): cv.string,
+    vol.Optional("entry_ids", default=list): [cv.string],
+    vol.Optional("args"): dict,
 }
 
 _LOGGER = logging.getLogger(__name__)
@@ -164,6 +211,7 @@ def _register_global(hass: HomeAssistant) -> None:
     store.setdefault("sources", {})
     store.setdefault("syncs", {})
     store.setdefault("subscribers", set())
+    store.setdefault("probe_subscribers", set())
     if store.get("registered"):
         return
 
@@ -229,6 +277,77 @@ def _register_global(hass: HomeAssistant) -> None:
         except JointSpaceError as err:
             raise HomeAssistantError(str(err)) from err
 
+    async def _svc_tv_send_keys(call: ServiceCall) -> ServiceResponse:
+        source = get_source(hass, call.data["entry_id"])
+        return await remote.send_keys(
+            hass,
+            source,
+            call.data["keys"],
+            delay_ms=call.data["delay_ms"],
+            settle_ms=call.data.get("settle_ms"),
+            anchor=call.data.get("anchor") == "home",
+        )
+
+    async def _svc_tv_macro(call: ServiceCall) -> ServiceResponse:
+        source = get_source(hass, call.data["entry_id"])
+        return await macros.run_macro(hass, source, call.data["macro"], call.data.get("args"))
+
+    async def _svc_tv_macro_list(call: ServiceCall) -> ServiceResponse:
+        source = get_source(hass, call.data["entry_id"])
+        return {"macros": await macros.list_macros(hass, source)}
+
+    async def _probe(call: ServiceCall) -> probe.ProbeJournal:
+        journal = probe.get_journal(hass)
+        await journal.ensure_loaded()
+        return journal
+
+    async def _svc_probe_create(call: ServiceCall) -> ServiceResponse:
+        journal = await _probe(call)
+        return journal.create(call.data["name"], call.data.get("target"), call.data.get("device"))
+
+    async def _svc_probe_list(call: ServiceCall) -> ServiceResponse:
+        journal = await _probe(call)
+        return {"notebooks": journal.list()}
+
+    async def _svc_probe_delete(call: ServiceCall) -> None:
+        journal = await _probe(call)
+        journal.delete(call.data["notebook"])
+
+    async def _svc_probe_fire(call: ServiceCall) -> ServiceResponse:
+        await _probe(call)
+        return await probe.fire(
+            hass,
+            call.data["notebook"],
+            kind=call.data["kind"],
+            entry_id=call.data.get("entry_id"),
+            target=call.data.get("target"),
+            stimulus=call.data["stimulus"],
+        )
+
+    async def _svc_probe_annotate(call: ServiceCall) -> ServiceResponse:
+        journal = await _probe(call)
+        return journal.annotate(
+            call.data["notebook"],
+            call.data.get("id"),
+            call.data.get("observation"),
+            call.data.get("outcome"),
+            call.data.get("tags"),
+        )
+
+    async def _svc_probe_note(call: ServiceCall) -> ServiceResponse:
+        journal = await _probe(call)
+        return journal.note(call.data["notebook"], call.data["text"])
+
+    async def _svc_probe_export(call: ServiceCall) -> ServiceResponse:
+        journal = await _probe(call)
+        return {"markdown": journal.export(call.data["notebook"])}
+
+    async def _svc_probe_promote(call: ServiceCall) -> ServiceResponse:
+        journal = await _probe(call)
+        return await journal.promote(
+            call.data["notebook"], call.data["entry_ids"], call.data["name"], call.data.get("args")
+        )
+
     hass.services.async_register(
         DOMAIN, "atv_swipe", _svc_swipe, schema=vol.Schema(_SWIPE_FIELDS)
     )
@@ -292,6 +411,59 @@ def _register_global(hass: HomeAssistant) -> None:
         schema=vol.Schema(_TV_SETTINGS_SWEEP_FIELDS),
         supports_response=SupportsResponse.ONLY,
     )
+    hass.services.async_register(
+        DOMAIN,
+        "tv_send_keys",
+        _svc_tv_send_keys,
+        schema=vol.Schema(_TV_SEND_KEYS_FIELDS),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "tv_macro",
+        _svc_tv_macro,
+        schema=vol.Schema(_TV_MACRO_FIELDS),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "tv_macro_list",
+        _svc_tv_macro_list,
+        schema=vol.Schema(_TV_MACRO_LIST_FIELDS),
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN, "probe_notebook_create", _svc_probe_create,
+        schema=vol.Schema(_PROBE_CREATE_FIELDS), supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN, "probe_notebook_list", _svc_probe_list,
+        schema=vol.Schema({}), supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN, "probe_notebook_delete", _svc_probe_delete,
+        schema=vol.Schema(_PROBE_DELETE_FIELDS),
+    )
+    hass.services.async_register(
+        DOMAIN, "probe_fire", _svc_probe_fire,
+        schema=vol.Schema(_PROBE_FIRE_FIELDS), supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN, "probe_annotate", _svc_probe_annotate,
+        schema=vol.Schema(_PROBE_ANNOTATE_FIELDS), supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN, "probe_note", _svc_probe_note,
+        schema=vol.Schema(_PROBE_NOTE_FIELDS), supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN, "probe_export", _svc_probe_export,
+        schema=vol.Schema(_PROBE_EXPORT_FIELDS), supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN, "probe_promote", _svc_probe_promote,
+        schema=vol.Schema(_PROBE_PROMOTE_FIELDS), supports_response=SupportsResponse.ONLY,
+    )
 
     websocket_api.async_register_command(hass, _ws_swipe)
     websocket_api.async_register_command(hass, _ws_touch)
@@ -300,6 +472,9 @@ def _register_global(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, _ws_tv_settings_list)
     websocket_api.async_register_command(hass, _ws_tv_settings_get)
     websocket_api.async_register_command(hass, _ws_tv_settings_set)
+    websocket_api.async_register_command(hass, _ws_probe_subscribe)
+    websocket_api.async_register_command(hass, _ws_probe_fire)
+    websocket_api.async_register_command(hass, _ws_probe_annotate)
 
     store["registered"] = True
     _LOGGER.debug("Fibbers Bridge: services + websocket commands registered")
@@ -581,3 +756,103 @@ async def _ws_tv_settings_set(
         connection.send_error(msg["id"], "fibbers_bridge_error", str(err))
         return
     connection.send_result(msg["id"], result)
+
+
+# --- Probe websocket commands (live journal + fire/annotate) --------------------
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "fibbers_bridge/probe_subscribe",
+        vol.Required("notebook"): cv.string,
+    }
+)
+@websocket_api.async_response
+async def _ws_probe_subscribe(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Stream one notebook's entries; replay the existing ones on subscribe."""
+    notebook = msg["notebook"]
+    journal = probe.get_journal(hass)
+    await journal.ensure_loaded()
+
+    @callback
+    def _forward(entry: dict[str, Any]) -> None:
+        connection.send_message(websocket_api.event_message(msg["id"], entry))
+
+    connection.subscriptions[msg["id"]] = probe.add_probe_subscriber(hass, notebook, _forward)
+    connection.send_result(msg["id"])
+    try:
+        for entry in journal.entries(notebook):
+            connection.send_message(websocket_api.event_message(msg["id"], entry))
+    except HomeAssistantError:
+        pass  # unknown notebook — nothing to replay
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "fibbers_bridge/probe_fire",
+        vol.Required("notebook"): cv.string,
+        vol.Required("kind"): vol.In(["remote_key", "service", "http"]),
+        vol.Optional("entry_id"): cv.string,
+        vol.Optional("target"): cv.string,
+        vol.Optional("stimulus", default=dict): dict,
+    }
+)
+@websocket_api.async_response
+async def _ws_probe_fire(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Fire a stimulus and record it — the one-keystroke path for the card."""
+    try:
+        await probe.get_journal(hass).ensure_loaded()
+        entry = await probe.fire(
+            hass,
+            msg["notebook"],
+            kind=msg["kind"],
+            entry_id=msg.get("entry_id"),
+            target=msg.get("target"),
+            stimulus=msg["stimulus"],
+        )
+    except (HomeAssistantError, JointSpaceError) as err:
+        connection.send_error(msg["id"], "fibbers_bridge_error", str(err))
+        return
+    connection.send_result(msg["id"], entry)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "fibbers_bridge/probe_annotate",
+        vol.Required("notebook"): cv.string,
+        # `entry_id`, not `id`: the ws envelope reserves `id` for the message seq.
+        vol.Optional("entry_id"): cv.string,
+        vol.Optional("observation"): cv.string,
+        vol.Optional("outcome"): vol.In(PROBE_OUTCOMES),
+        vol.Optional("tags"): [cv.string],
+    }
+)
+@websocket_api.async_response
+async def _ws_probe_annotate(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Attach an observation/outcome to an entry (defaults to the most recent)."""
+    try:
+        journal = probe.get_journal(hass)
+        await journal.ensure_loaded()
+        entry = journal.annotate(
+            msg["notebook"],
+            msg.get("entry_id"),
+            msg.get("observation"),
+            msg.get("outcome"),
+            msg.get("tags"),
+        )
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "fibbers_bridge_error", str(err))
+        return
+    connection.send_result(msg["id"], entry)

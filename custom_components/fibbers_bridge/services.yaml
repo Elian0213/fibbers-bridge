@@ -321,3 +321,222 @@ tv_settings_sweep:
       default: 1
       selector:
         number: { min: 1, max: 1000, mode: box }
+
+tv_send_keys:
+  name: Send TV key sequence
+  description: >-
+    Send a sequence of remote keys to the TV server-side with exact timing (one
+    call, no per-key round trip). Returns per-key status. Cannot report what the
+    TV now shows - Titan OS gives no feedback.
+  fields:
+    entry_id:
+      name: Philips TV
+      description: The paired TV to send to.
+      required: true
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+    keys:
+      name: Keys
+      description: >-
+        A list of keys. Each is a name (e.g. "CursorUp") or an object with
+        repeat / settle_ms / delay_ms, or a select: {direction, index, length}.
+      required: true
+      example: '["Home", {"key": "CursorUp", "repeat": 2}, "Confirm"]'
+      selector:
+        object:
+    delay_ms:
+      name: Delay between keys
+      default: 600
+      selector:
+        number: { min: 0, max: 10000, unit_of_measurement: ms, mode: box }
+    settle_ms:
+      name: Settle after screen change
+      selector:
+        number: { min: 0, max: 10000, unit_of_measurement: ms, mode: box }
+    anchor:
+      name: Anchor
+      description: '"home" prepends Back x3 -> Home so the sequence starts from a known screen.'
+      selector:
+        select:
+          options: [home]
+
+tv_macro:
+  name: Run a TV macro
+  description: >-
+    Run a named, per-model key macro (e.g. picture_style). Reports what was sent,
+    never what the TV now is - it cannot read TV state back.
+  fields:
+    entry_id:
+      name: Philips TV
+      required: true
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+    macro:
+      name: Macro
+      required: true
+      example: picture_style
+      selector:
+        text:
+    args:
+      name: Arguments
+      example: '{"index": 2}'
+      selector:
+        object:
+
+tv_macro_list:
+  name: List TV macros
+  description: List the macros that match a TV, with their args and verified flag.
+  fields:
+    entry_id:
+      name: Philips TV
+      required: true
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+
+probe_notebook_create:
+  name: Create a probe notebook
+  description: Start a notebook for an investigation.
+  fields:
+    name:
+      name: Name
+      required: true
+      selector:
+        text:
+    target:
+      name: Target
+      description: What is being probed (free text).
+      selector:
+        text:
+    device:
+      name: Device
+      description: Device facts to put in the exported header.
+      selector:
+        object:
+
+probe_notebook_list:
+  name: List probe notebooks
+  description: List notebooks and their entry counts.
+
+probe_notebook_delete:
+  name: Delete a probe notebook
+  fields:
+    notebook:
+      name: Notebook id
+      required: true
+      selector:
+        text:
+
+probe_fire:
+  name: Fire a probe
+  description: >-
+    Send a stimulus and record it in one action, so an observation is never lost.
+    Records what was sent; a human adds what they saw with probe_annotate.
+  fields:
+    notebook:
+      name: Notebook id
+      required: true
+      selector:
+        text:
+    kind:
+      name: Kind
+      required: true
+      selector:
+        select:
+          options: [remote_key, service, http]
+    entry_id:
+      name: Philips TV
+      description: Required for remote_key / http.
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+    target:
+      name: Target
+      selector:
+        text:
+    stimulus:
+      name: Stimulus
+      description: '{keys:[...]} | {domain,service,data} | {method,path}'
+      selector:
+        object:
+
+probe_annotate:
+  name: Annotate a probe entry
+  description: Attach an observation, outcome and tags (defaults to the latest entry).
+  fields:
+    notebook:
+      name: Notebook id
+      required: true
+      selector:
+        text:
+    id:
+      name: Entry id
+      description: Defaults to the most recent entry.
+      selector:
+        text:
+    observation:
+      name: Observation
+      selector:
+        text:
+    outcome:
+      name: Outcome
+      selector:
+        select:
+          options: [works, nothing, error, unknown]
+    tags:
+      name: Tags
+      selector:
+        object:
+
+probe_note:
+  name: Add a probe note
+  description: A free-text entry with no stimulus, for context.
+  fields:
+    notebook:
+      name: Notebook id
+      required: true
+      selector:
+        text:
+    text:
+      name: Text
+      required: true
+      selector:
+        text:
+
+probe_export:
+  name: Export a probe notebook
+  description: Render a notebook as markdown, returned as a response.
+  fields:
+    notebook:
+      name: Notebook id
+      required: true
+      selector:
+        text:
+
+probe_promote:
+  name: Promote entries to a macro
+  description: >-
+    Turn a selected run of entries into a reusable macro file (collapses repeats,
+    prepends the Home anchor).
+  fields:
+    notebook:
+      name: Notebook id
+      required: true
+      selector:
+        text:
+    name:
+      name: Macro name
+      required: true
+      selector:
+        text:
+    entry_ids:
+      name: Entry ids
+      description: The entries to include; omit for the whole notebook.
+      selector:
+        object:
+    args:
+      name: Arguments spec
+      selector:
+        object:

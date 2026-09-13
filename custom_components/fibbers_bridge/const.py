@@ -49,3 +49,41 @@ RGB_COLOR_MODES = frozenset({"hs", "rgb", "rgbw", "rgbww", "xy"})
 
 # Dispatcher signal fired when a source reads a fresh colour (drives the sensor).
 SIGNAL_SOURCE_UPDATE = f"{DOMAIN}_source_update"
+
+# --- Remote key sequences ------------------------------------------------------
+#
+# Titan OS gives no feedback, so sequences run server-side with fixed timing
+# (measured on a 43PUS7608/12) rather than one key per conversational round trip.
+
+PHILIPS_JS_DOMAIN = "philips_js"
+
+KEY_HOME = "Home"
+KEY_BACK = "Back"
+KEY_CONFIRM = "Confirm"
+
+DEFAULT_KEY_DELAY_MS = 600  # pause after a cursor move
+DEFAULT_SETTLE_MS = 1200  # pause after Confirm (screen changes)
+HOME_SETTLE_MS = 3000  # pause after Home / the anchor reset
+
+# Screen-changing keys wait longer than a plain cursor move.
+PER_KEY_SETTLE_MS = {KEY_HOME: HOME_SETTLE_MS, KEY_CONFIRM: DEFAULT_SETTLE_MS}
+
+DIRECTIONS = {
+    "up": "CursorUp",
+    "down": "CursorDown",
+    "left": "CursorLeft",
+    "right": "CursorRight",
+}
+_OPPOSITE = {
+    "CursorUp": "CursorDown",
+    "CursorDown": "CursorUp",
+    "CursorLeft": "CursorRight",
+    "CursorRight": "CursorLeft",
+}
+
+# --- Probe journal -------------------------------------------------------------
+
+PROBE_STORAGE_KEY = f"{DOMAIN}.probes"
+PROBE_STORAGE_VERSION = 1
+PROBE_KINDS = ("remote_key", "service", "http", "note")
+PROBE_OUTCOMES = ("works", "nothing", "error", "unknown")

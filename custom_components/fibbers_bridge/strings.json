@@ -133,6 +133,99 @@
         "end": { "name": "Last node id", "description": "End of the id range." },
         "step": { "name": "Step", "description": "Id increment." }
       }
+    },
+    "tv_send_keys": {
+      "name": "Send TV key sequence",
+      "description": "Send a sequence of remote keys server-side with exact timing. Cannot report TV state.",
+      "fields": {
+        "entry_id": { "name": "Philips TV", "description": "The paired TV to send to." },
+        "keys": { "name": "Keys", "description": "A list of key names or {key, repeat, settle_ms} / {select}." },
+        "delay_ms": { "name": "Delay between keys", "description": "Default pause between keys." },
+        "settle_ms": { "name": "Settle after screen change", "description": "Pause after a screen-changing key." },
+        "anchor": { "name": "Anchor", "description": "\"home\" starts from a known screen." }
+      }
+    },
+    "tv_macro": {
+      "name": "Run a TV macro",
+      "description": "Run a named per-model key macro. Reports what was sent, not what the TV now is.",
+      "fields": {
+        "entry_id": { "name": "Philips TV", "description": "The paired TV." },
+        "macro": { "name": "Macro", "description": "The macro name." },
+        "args": { "name": "Arguments", "description": "Macro arguments." }
+      }
+    },
+    "tv_macro_list": {
+      "name": "List TV macros",
+      "description": "List the macros that match a TV, with their args and verified flag.",
+      "fields": {
+        "entry_id": { "name": "Philips TV", "description": "The paired TV." }
+      }
+    },
+    "probe_notebook_create": {
+      "name": "Create a probe notebook",
+      "description": "Start a notebook for an investigation.",
+      "fields": {
+        "name": { "name": "Name", "description": "Notebook name." },
+        "target": { "name": "Target", "description": "What is being probed." },
+        "device": { "name": "Device", "description": "Device facts for the exported header." }
+      }
+    },
+    "probe_notebook_list": {
+      "name": "List probe notebooks",
+      "description": "List notebooks and their entry counts."
+    },
+    "probe_notebook_delete": {
+      "name": "Delete a probe notebook",
+      "fields": {
+        "notebook": { "name": "Notebook id", "description": "The notebook to delete." }
+      }
+    },
+    "probe_fire": {
+      "name": "Fire a probe",
+      "description": "Send a stimulus and record it in one action. Records what was sent.",
+      "fields": {
+        "notebook": { "name": "Notebook id", "description": "The notebook to record in." },
+        "kind": { "name": "Kind", "description": "remote_key, service or http." },
+        "entry_id": { "name": "Philips TV", "description": "Required for remote_key / http." },
+        "target": { "name": "Target", "description": "What was stimulated." },
+        "stimulus": { "name": "Stimulus", "description": "The stimulus payload for the kind." }
+      }
+    },
+    "probe_annotate": {
+      "name": "Annotate a probe entry",
+      "description": "Attach an observation, outcome and tags (defaults to the latest entry).",
+      "fields": {
+        "notebook": { "name": "Notebook id", "description": "The notebook." },
+        "id": { "name": "Entry id", "description": "Defaults to the most recent entry." },
+        "observation": { "name": "Observation", "description": "What was seen." },
+        "outcome": { "name": "Outcome", "description": "works / nothing / error / unknown." },
+        "tags": { "name": "Tags", "description": "Free-form tags." }
+      }
+    },
+    "probe_note": {
+      "name": "Add a probe note",
+      "description": "A free-text entry with no stimulus, for context.",
+      "fields": {
+        "notebook": { "name": "Notebook id", "description": "The notebook." },
+        "text": { "name": "Text", "description": "The note." }
+      }
+    },
+    "probe_export": {
+      "name": "Export a probe notebook",
+      "description": "Render a notebook as markdown, returned as a response.",
+      "fields": {
+        "notebook": { "name": "Notebook id", "description": "The notebook to export." }
+      }
+    },
+    "probe_promote": {
+      "name": "Promote entries to a macro",
+      "description": "Turn a selected run of entries into a reusable macro file.",
+      "fields": {
+        "notebook": { "name": "Notebook id", "description": "The notebook." },
+        "name": { "name": "Macro name", "description": "Name for the new macro." },
+        "entry_ids": { "name": "Entry ids", "description": "The entries to include; omit for all." },
+        "args": { "name": "Arguments spec", "description": "Optional macro argument spec." }
+      }
     }
   }
 }

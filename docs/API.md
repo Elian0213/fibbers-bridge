@@ -212,6 +212,44 @@ response and flagged `json_omitted: true` — it still counts towards
 
 ---
 
+## Remote key sequences
+
+`fibbers_bridge.tv_send_keys` — `{ entry_id, keys, delay_ms?, settle_ms?, anchor? }`,
+response **optional** → `{ elapsed_ms, transport, results: [{ key, status, elapsed_ms }] }`.
+Runs the whole sequence server-side with fixed timing. A key is a name or
+`{ key, repeat, settle_ms, delay_ms }`; `{ select: { direction, index, length, margin } }`
+addresses list item *N* by saturate-then-step; `anchor: "home"` prepends
+Back×3 → Home. Sent via the core `philips_js` remote where present, else the
+bridge's paired client.
+
+`fibbers_bridge.tv_macro` — `{ entry_id, macro, args? }` and
+`fibbers_bridge.tv_macro_list` — `{ entry_id }` → `{ macros: [{ name, description,
+args, verified }] }`. Macros live at `macros/<os_type>/<model-glob>.yaml`,
+overridable at `config/fibbers_bridge/macros/`. Node ids and the Titan OS
+behaviour behind them: [`docs/TITANOS.md`](TITANOS.md).
+
+**A macro/sequence reports what was *sent*, never what the TV now *is*** — Titan OS
+gives no feedback.
+
+## Probe journal
+
+A probe is any stimulus plus what a human saw. Firing and recording are one action
+so an observation is never lost.
+
+- `probe_notebook_create` / `_list` / `_delete` — manage notebooks (Store-backed).
+- `probe_fire` — `{ notebook, kind, entry_id?, target?, stimulus }` (kind:
+  `remote_key` | `service` | `http`) → the recorded entry.
+- `probe_annotate` — `{ notebook, id?, observation?, outcome?, tags? }` (no id →
+  the most recent entry).
+- `probe_note` — `{ notebook, text }`.
+- `probe_export` — `{ notebook }` → `{ markdown }`.
+- `probe_promote` — `{ notebook, name, entry_ids?, args? }` → `{ path, yaml }`.
+
+Websocket: `fibbers_bridge/probe_subscribe` (`{ notebook }` → streams entries,
+replays existing on subscribe), `probe_fire`, `probe_annotate`.
+
+Entry: `{ id, ts, kind, target, stimulus, elapsed_ms, observation, outcome, tags }`.
+
 ## Discovery / feature detection
 
 Check before you offer the feature, so your card degrades cleanly when the bridge

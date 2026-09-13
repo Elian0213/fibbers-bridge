@@ -3,6 +3,36 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] — 2026-09-13
+
+Key sequences that actually replay, and a journal so finding out what a device
+does isn't thrown away when the chat scrolls.
+
+### Added
+
+- **`tv_send_keys`** — send a whole key sequence server-side with exact timing
+  (one call, no per-key round trip), returning per-key status. A step is a key
+  name or `{key, repeat, settle_ms, delay_ms}`; `anchor: home` prepends
+  Back×3 → Home so a sequence starts from a known screen; `select: {direction,
+  index, length, margin}` addresses list item *N* by saturate-then-step, with no
+  feedback required.
+- **`tv_macro` / `tv_macro_list`** — named, per-model macros from
+  `macros/<os_type>/<model-glob>.yaml`, overridable at
+  `config/fibbers_bridge/macros/`. Args are range-checked before a single key is
+  sent. Ships an (unverified) `picture_style` for the 43PUS76xx.
+- **The probe journal** — `probe_fire` sends a stimulus *and* records it in one
+  action, so an observation is never lost; `probe_annotate` / `probe_note` add
+  what a human saw; `probe_export` renders a notebook as markdown; `probe_promote`
+  turns a run of entries into a macro (collapsing repeats, prepending the anchor).
+  Notebooks persist via HA's Store; a websocket (`probe_subscribe`) streams entries
+  live. Seeded with the current Titan OS findings at
+  `examples/notebooks/philips-titanos-keys.json`.
+
+### Notes
+
+- Every macro/probe response says what was **sent**, never what the TV now **is** —
+  Titan OS reports no state (see `docs/TITANOS.md`).
+
 ## [0.5.1] — 2026-09-13
 
 ### Fixed
