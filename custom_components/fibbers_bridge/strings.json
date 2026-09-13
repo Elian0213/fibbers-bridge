@@ -39,135 +39,270 @@
       "name": "Apple TV swipe",
       "description": "Swipe on the Apple TV's touch surface (0-1000 coordinates) via the Companion protocol.",
       "fields": {
-        "device_id": { "name": "Apple TV", "description": "The Apple TV device to control." },
-        "start_x": { "name": "Start X", "description": "Horizontal start position (0-1000)." },
-        "start_y": { "name": "Start Y", "description": "Vertical start position (0-1000)." },
-        "end_x": { "name": "End X", "description": "Horizontal end position (0-1000)." },
-        "end_y": { "name": "End Y", "description": "Vertical end position (0-1000)." },
-        "duration_ms": { "name": "Duration", "description": "Swipe duration in milliseconds." }
+        "device_id": {
+          "name": "Apple TV",
+          "description": "The Apple TV device to control."
+        },
+        "start_x": {
+          "name": "Start X",
+          "description": "Horizontal start position (0-1000)."
+        },
+        "start_y": {
+          "name": "Start Y",
+          "description": "Vertical start position (0-1000)."
+        },
+        "end_x": {
+          "name": "End X",
+          "description": "Horizontal end position (0-1000)."
+        },
+        "end_y": {
+          "name": "End Y",
+          "description": "Vertical end position (0-1000)."
+        },
+        "duration_ms": {
+          "name": "Duration",
+          "description": "Swipe duration in milliseconds."
+        }
       }
     },
     "atv_touch": {
       "name": "Apple TV touch",
       "description": "Send a single press / hold / release at a point on the Apple TV's touch surface.",
       "fields": {
-        "device_id": { "name": "Apple TV", "description": "The Apple TV device to control." },
-        "x": { "name": "X", "description": "Horizontal position (0-1000)." },
-        "y": { "name": "Y", "description": "Vertical position (0-1000)." },
-        "mode": { "name": "Mode", "description": "The touch phase to send." }
+        "device_id": {
+          "name": "Apple TV",
+          "description": "The Apple TV device to control."
+        },
+        "x": {
+          "name": "X",
+          "description": "Horizontal position (0-1000)."
+        },
+        "y": {
+          "name": "Y",
+          "description": "Vertical position (0-1000)."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "The touch phase to send."
+        }
       }
     },
     "atv_click": {
       "name": "Apple TV click",
       "description": "Click the Apple TV's touch surface as a single tap, double tap, or hold.",
       "fields": {
-        "device_id": { "name": "Apple TV", "description": "The Apple TV device to control." },
-        "action": { "name": "Action", "description": "The kind of click." }
+        "device_id": {
+          "name": "Apple TV",
+          "description": "The Apple TV device to control."
+        },
+        "action": {
+          "name": "Action",
+          "description": "The kind of click."
+        }
       }
     },
     "ambilight_start": {
       "name": "Start ambilight sync",
       "description": "Mirror a Philips TV's Ambilight colour onto an RGB light, live, for any on-screen source.",
       "fields": {
-        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to read colour from." },
-        "target": { "name": "Light", "description": "The RGB light that should mirror the TV." },
-        "rate": { "name": "Update rate", "description": "Colour updates per second." },
-        "mode": { "name": "Colour source", "description": "processed (LED output) or measured (raw screen)." }
+        "entry_id": {
+          "name": "Philips Ambilight TV",
+          "description": "The paired TV to read colour from."
+        },
+        "target": {
+          "name": "Light",
+          "description": "The RGB light that should mirror the TV."
+        },
+        "rate": {
+          "name": "Update rate",
+          "description": "Colour updates per second."
+        },
+        "mode": {
+          "name": "Colour source",
+          "description": "processed (LED output) or measured (raw screen)."
+        }
       }
     },
     "ambilight_stop": {
       "name": "Stop ambilight sync",
       "description": "Stop mirroring the TV colour onto a light.",
       "fields": {
-        "target": { "name": "Light", "description": "The light to stop mirroring." }
+        "target": {
+          "name": "Light",
+          "description": "The light to stop mirroring."
+        }
       }
     },
     "ambilight_probe": {
       "name": "Probe ambilight",
       "description": "One-shot read of a TV's current Ambilight colour, raw payload and topology.",
       "fields": {
-        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to read from." },
-        "mode": { "name": "Colour source", "description": "Which layer to read." }
+        "entry_id": {
+          "name": "Philips Ambilight TV",
+          "description": "The paired TV to read from."
+        },
+        "mode": {
+          "name": "Colour source",
+          "description": "Which layer to read."
+        }
       }
     },
     "tv_probe_settings": {
       "name": "Probe TV settings API",
       "description": "Ask a paired Philips TV what its JointSpace API really serves, ignoring what it advertises. Read-only.",
       "fields": {
-        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to probe." },
-        "include_raw": { "name": "Include raw structure", "description": "Return the complete settings tree as well as the summary." }
+        "entry_id": {
+          "name": "Philips Ambilight TV",
+          "description": "The paired TV to probe."
+        },
+        "include_raw": {
+          "name": "Include raw structure",
+          "description": "Return the complete settings tree as well as the summary."
+        }
       }
     },
     "tv_settings_list": {
       "name": "List TV settings",
       "description": "Read a paired Philips TV's settings tree and current values as one list a card can render.",
       "fields": {
-        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to read from." },
-        "refresh": { "name": "Refresh structure", "description": "Re-fetch the settings tree instead of using the cached one." }
+        "entry_id": {
+          "name": "Philips Ambilight TV",
+          "description": "The paired TV to read from."
+        },
+        "refresh": {
+          "name": "Refresh structure",
+          "description": "Re-fetch the settings tree instead of using the cached one."
+        }
       }
     },
     "tv_settings_get": {
       "name": "Get TV setting values",
       "description": "Read current values for specific settings node ids.",
       "fields": {
-        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to read from." },
-        "node_ids": { "name": "Node ids", "description": "The settings node ids to read." }
+        "entry_id": {
+          "name": "Philips Ambilight TV",
+          "description": "The paired TV to read from."
+        },
+        "node_ids": {
+          "name": "Node ids",
+          "description": "The settings node ids to read."
+        }
       }
     },
     "tv_settings_set": {
       "name": "Set a TV setting",
       "description": "Write one settings node and confirm it by reading it back (see `changed`).",
       "fields": {
-        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to write to." },
-        "node_id": { "name": "Node id", "description": "The settings node to write." },
-        "value": { "name": "Value", "description": "The new value (number, option id, or colour int)." },
-        "data": { "name": "Raw data", "description": "Advanced: the exact update payload; overrides value." }
+        "entry_id": {
+          "name": "Philips Ambilight TV",
+          "description": "The paired TV to write to."
+        },
+        "node_id": {
+          "name": "Node id",
+          "description": "The settings node to write."
+        },
+        "value": {
+          "name": "Value",
+          "description": "The new value (number, option id, or colour int)."
+        },
+        "data": {
+          "name": "Raw data",
+          "description": "Advanced: the exact update payload; overrides value."
+        }
       }
     },
     "tv_settings_sweep": {
       "name": "Sweep TV settings nodes",
       "description": "Diagnostic: read every settings node id in a range and report the ones that answer.",
       "fields": {
-        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to sweep." },
-        "start": { "name": "First node id", "description": "Start of the id range." },
-        "end": { "name": "Last node id", "description": "End of the id range." },
-        "step": { "name": "Step", "description": "Id increment." }
+        "entry_id": {
+          "name": "Philips Ambilight TV",
+          "description": "The paired TV to sweep."
+        },
+        "start": {
+          "name": "First node id",
+          "description": "Start of the id range."
+        },
+        "end": {
+          "name": "Last node id",
+          "description": "End of the id range."
+        },
+        "step": {
+          "name": "Step",
+          "description": "Id increment."
+        }
       }
     },
     "tv_send_keys": {
       "name": "Send TV key sequence",
       "description": "Send a sequence of remote keys server-side with exact timing. Cannot report TV state.",
       "fields": {
-        "entry_id": { "name": "Philips TV", "description": "The paired TV to send to." },
-        "keys": { "name": "Keys", "description": "A list of key names or {key, repeat, settle_ms} / {select}." },
-        "delay_ms": { "name": "Delay between keys", "description": "Default pause between keys." },
-        "settle_ms": { "name": "Settle after screen change", "description": "Pause after a screen-changing key." },
-        "anchor": { "name": "Anchor", "description": "\"home\" starts from a known screen." }
+        "entry_id": {
+          "name": "Philips TV",
+          "description": "The paired TV to send to."
+        },
+        "keys": {
+          "name": "Keys",
+          "description": "The keys to send: names, or step objects with repeat / settle_ms / a select."
+        },
+        "delay_ms": {
+          "name": "Delay between keys",
+          "description": "Default pause between keys."
+        },
+        "settle_ms": {
+          "name": "Settle after screen change",
+          "description": "Pause after a screen-changing key."
+        },
+        "anchor": {
+          "name": "Anchor",
+          "description": "\"home\" starts from a known screen."
+        }
       }
     },
     "tv_macro": {
       "name": "Run a TV macro",
       "description": "Run a named per-model key macro. Reports what was sent, not what the TV now is.",
       "fields": {
-        "entry_id": { "name": "Philips TV", "description": "The paired TV." },
-        "macro": { "name": "Macro", "description": "The macro name." },
-        "args": { "name": "Arguments", "description": "Macro arguments." }
+        "entry_id": {
+          "name": "Philips TV",
+          "description": "The paired TV."
+        },
+        "macro": {
+          "name": "Macro",
+          "description": "The macro name."
+        },
+        "args": {
+          "name": "Arguments",
+          "description": "Macro arguments."
+        }
       }
     },
     "tv_macro_list": {
       "name": "List TV macros",
       "description": "List the macros that match a TV, with their args and verified flag.",
       "fields": {
-        "entry_id": { "name": "Philips TV", "description": "The paired TV." }
+        "entry_id": {
+          "name": "Philips TV",
+          "description": "The paired TV."
+        }
       }
     },
     "probe_notebook_create": {
       "name": "Create a probe notebook",
       "description": "Start a notebook for an investigation.",
       "fields": {
-        "name": { "name": "Name", "description": "Notebook name." },
-        "target": { "name": "Target", "description": "What is being probed." },
-        "device": { "name": "Device", "description": "Device facts for the exported header." }
+        "name": {
+          "name": "Name",
+          "description": "Notebook name."
+        },
+        "target": {
+          "name": "Target",
+          "description": "What is being probed."
+        },
+        "device": {
+          "name": "Device",
+          "description": "Device facts for the exported header."
+        }
       }
     },
     "probe_notebook_list": {
@@ -177,54 +312,109 @@
     "probe_notebook_delete": {
       "name": "Delete a probe notebook",
       "fields": {
-        "notebook": { "name": "Notebook id", "description": "The notebook to delete." }
-      }
+        "notebook": {
+          "name": "Notebook id",
+          "description": "The notebook to delete."
+        }
+      },
+      "description": "Delete a notebook and all its entries."
     },
     "probe_fire": {
       "name": "Fire a probe",
       "description": "Send a stimulus and record it in one action. Records what was sent.",
       "fields": {
-        "notebook": { "name": "Notebook id", "description": "The notebook to record in." },
-        "kind": { "name": "Kind", "description": "remote_key, service or http." },
-        "entry_id": { "name": "Philips TV", "description": "Required for remote_key / http." },
-        "target": { "name": "Target", "description": "What was stimulated." },
-        "stimulus": { "name": "Stimulus", "description": "The stimulus payload for the kind." }
+        "notebook": {
+          "name": "Notebook id",
+          "description": "The notebook to record in."
+        },
+        "kind": {
+          "name": "Kind",
+          "description": "remote_key, service or http."
+        },
+        "entry_id": {
+          "name": "Philips TV",
+          "description": "Required for remote_key / http."
+        },
+        "target": {
+          "name": "Target",
+          "description": "What was stimulated."
+        },
+        "stimulus": {
+          "name": "Stimulus",
+          "description": "The stimulus payload for the kind."
+        }
       }
     },
     "probe_annotate": {
       "name": "Annotate a probe entry",
       "description": "Attach an observation, outcome and tags (defaults to the latest entry).",
       "fields": {
-        "notebook": { "name": "Notebook id", "description": "The notebook." },
-        "id": { "name": "Entry id", "description": "Defaults to the most recent entry." },
-        "observation": { "name": "Observation", "description": "What was seen." },
-        "outcome": { "name": "Outcome", "description": "works / nothing / error / unknown." },
-        "tags": { "name": "Tags", "description": "Free-form tags." }
+        "notebook": {
+          "name": "Notebook id",
+          "description": "The notebook."
+        },
+        "id": {
+          "name": "Entry id",
+          "description": "Defaults to the most recent entry."
+        },
+        "observation": {
+          "name": "Observation",
+          "description": "What was seen."
+        },
+        "outcome": {
+          "name": "Outcome",
+          "description": "works / nothing / error / unknown."
+        },
+        "tags": {
+          "name": "Tags",
+          "description": "Free-form tags."
+        }
       }
     },
     "probe_note": {
       "name": "Add a probe note",
       "description": "A free-text entry with no stimulus, for context.",
       "fields": {
-        "notebook": { "name": "Notebook id", "description": "The notebook." },
-        "text": { "name": "Text", "description": "The note." }
+        "notebook": {
+          "name": "Notebook id",
+          "description": "The notebook."
+        },
+        "text": {
+          "name": "Text",
+          "description": "The note."
+        }
       }
     },
     "probe_export": {
       "name": "Export a probe notebook",
       "description": "Render a notebook as markdown, returned as a response.",
       "fields": {
-        "notebook": { "name": "Notebook id", "description": "The notebook to export." }
+        "notebook": {
+          "name": "Notebook id",
+          "description": "The notebook to export."
+        }
       }
     },
     "probe_promote": {
       "name": "Promote entries to a macro",
       "description": "Turn a selected run of entries into a reusable macro file.",
       "fields": {
-        "notebook": { "name": "Notebook id", "description": "The notebook." },
-        "name": { "name": "Macro name", "description": "Name for the new macro." },
-        "entry_ids": { "name": "Entry ids", "description": "The entries to include; omit for all." },
-        "args": { "name": "Arguments spec", "description": "Optional macro argument spec." }
+        "notebook": {
+          "name": "Notebook id",
+          "description": "The notebook."
+        },
+        "name": {
+          "name": "Macro name",
+          "description": "Name for the new macro."
+        },
+        "entry_ids": {
+          "name": "Entry ids",
+          "description": "The entries to include; omit for all."
+        },
+        "args": {
+          "name": "Arguments spec",
+          "description": "Optional macro argument spec."
+        }
       }
     }
   }
