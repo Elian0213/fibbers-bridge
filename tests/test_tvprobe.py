@@ -16,10 +16,13 @@ import pytest
 from custom_components.fibbers_bridge.tvprobe import (
     PROBE_ENDPOINTS,
     SETTINGS_PATH,
+    advertised_features,
+    feature_advertised,
     collect_nodes,
     endpoint_url,
     probe_capabilities,
     summarise,
+    trim_previews,
     verdict_for,
 )
 
@@ -185,29 +188,30 @@ class _Session:
 
 
 class _StubClient:
-    def __init__(self, responses, menuitems=False):
+    def __init__(self, responses):
         self.session = _Session(responses)
         self.protocol = "https"
         self.api_version = 6
-        self.os_type = "Linux"
-        self.system = {
-            "featuring": {
-                "jsonfeatures": {"inputkey": ["key"]},
-                "systemfeatures": {"os_type": "Linux"},
-            }
-        }
-        self._menuitems = menuitems
+        self.system = None  # the bridge never calls getSystem(); this stays empty
 
-    def json_feature_supported(self, type_, value=None):
-        return self._menuitems if type_ == "menuitems" else False
+
+# What the 43PUS7608/12 actually advertises: no menuitems, no ambilight.
+_TITAN_SYSTEM = {
+    "name": "43PUS7608/12",
+    "featuring": {
+        "jsonfeatures": {"inputkey": ["key"], "pointer": ["context_based"]},
+        "systemfeatures": {"os_type": "Linux", "secured_transport": True},
+    },
+}
 
 
 class _StubSource:
-    def __init__(self, client):
+    def __init__(self, client, system=None):
         self.client = client
         self.host = "10.0.0.1"
         self.name = "43PUS7608/12"
-        self.model = "43PUS7608/12"
+        self.model = "TPM236E"
+        self.system = _TITAN_SYSTEM if system is None else system
         self.transport_calls = 0
 
     async def ensure_transport(self):
@@ -270,3 +274,91 @@ async def test_probe_survives_an_unreachable_endpoint() -> None:
     assert report["endpoints"][SETTINGS_PATH]["verdict"] == "unreachable"
     assert report["endpoints"][SETTINGS_PATH]["error"] == "no route to host"
     assert "powered on" in report["summary"]
+
+
+# --- advertised features -------------------------------------------------------
+
+
+def test_advertised_features_reads_the_system_blob() -> None:
+    out = advertised_features(_TITAN_SYSTEM)
+    assert out["jsonfeatures"] == {"inputkey": ["key"], "pointer": ["context_based"]}
+    assert out["systemfeatures"]["os_type"] == "Linux"
+
+
+def test_advertised_features_tolerates_a_missing_or_odd_blob() -> None:
+    assert advertised_features(None)["jsonfeatures"] is None
+    assert advertised_features({"featuring": "nonsense"})["jsonfeatures"] is None
+
+
+def test_feature_advertised() -> None:
+    assert feature_advertised(_TITAN_SYSTEM, "inputkey") is True
+    assert feature_advertised(_TITAN_SYSTEM, "menuitems") is False
+    assert feature_advertised(None, "menuitems") is False
+
+
+# --- trim_previews -------------------------------------------------------------
+
+
+def test_trim_previews_drops_only_the_oversized_body() -> None:
+    results = {
+        "small": {"bytes": 30, "json": {"a": 1}},
+        "large": {"bytes": 8155, "json": {"b": 2}},
+    }
+    trimmed = trim_previews(results, limit=4096)
+    assert trimmed["small"]["json"] == {"a": 1}
+    assert "json" not in trimmed["large"]
+    assert trimmed["large"]["json_omitted"] is True
+
+
+def test_trim_previews_leaves_unparsed_results_alone() -> None:
+    results = {"forbidden": {"bytes": 72, "status": 403}}
+    assert trim_previews(results) == {"forbidden": {"bytes": 72, "status": 403}}
+
+
+# --- the bug this release fixes ------------------------------------------------
+
+
+async def test_a_large_settings_tree_is_mined_before_it_is_trimmed() -> None:
+    """An 8 KB settings tree is a hit, not a stub.
+
+    v0.3.0 capped parsing at 4 KB, so a real 43PUS7608/12 tree came back with
+    zero nodes and the summary called it a stub. Nodes must be counted from the
+    parsed body first, and only then dropped from the response.
+    """
+    structure = {
+        "node": {
+            "node_id": n,
+            "string_id": f"setting_{n}",
+            "type": "int",
+        }
+        for n in [1]
+    }
+    structure["nodes"] = [{"node_id": i, "string_id": f"s{i}"} for i in range(200)]
+    body = _Response(200, structure)
+    assert len(body.content) > 4096, "fixture must exceed the inline preview cap"
+
+    report = await probe_capabilities(_StubSource(_StubClient({SETTINGS_PATH: body})))
+
+    assert report["settings_available"] is True
+    assert report["settings_nodes"] == 201
+    assert len(report["settings_nodes_sample"]) == 25
+    assert "stub" not in report["summary"]
+    # Mined, but not inlined into a response a human has to read.
+    assert report["endpoints"][SETTINGS_PATH]["json_omitted"] is True
+
+
+async def test_a_non_json_body_is_never_parsed() -> None:
+    shot = _Response(200, {"blob": "x"}, content_type="image/jpeg")
+    report = await probe_capabilities(_StubSource(_StubClient({"screenshot": shot})))
+    assert "json" not in report["endpoints"]["screenshot"]
+
+
+async def test_report_uses_the_paired_system_blob_not_the_client() -> None:
+    """The client's own `system` is empty until a getSystem() we never make."""
+    report = await probe_capabilities(_StubSource(_StubClient({})))
+    assert report["os_type"] == "Linux"
+    assert report["advertised"]["jsonfeatures"] == {
+        "inputkey": ["key"],
+        "pointer": ["context_based"],
+    }
+    assert report["menuitems_advertised"] is False

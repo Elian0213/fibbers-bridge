@@ -155,6 +155,11 @@ A node in `settings_nodes_sample` is what `menuitems/settings/current` reads and
 building brightness/picture-profile control. Pass `include_raw: true` for the
 complete tree (large).
 
+Bodies are parsed by content type, not size: JSON up to 1 MB is parsed and mined
+for node ids, non-JSON never is. A parsed body over 4 KB is dropped from the
+response and flagged `json_omitted: true` — it still counts towards
+`settings_nodes`.
+
 ---
 
 ## Discovery / feature detection

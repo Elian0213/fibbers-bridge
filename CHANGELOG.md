@@ -3,6 +3,23 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] — 2026-09-13
+
+### Fixed
+
+- **A real settings tree no longer reads as a stub.** `tv_probe_settings` capped
+  body parsing at 4 KB — a limit meant to keep a JPEG out of a service response,
+  but one that also swallowed the payload the probe exists to find. On a
+  43PUS7608/12 the settings tree is ~8 KB, so the endpoint reported `200` with
+  zero nodes and the summary called it a stub. Parsing is now decided by content
+  type rather than size (JSON up to 1 MB; non-JSON never parsed), and oversized
+  bodies are mined for node ids *first*, then dropped from the response with
+  `json_omitted: true`.
+- **`advertised` and `os_type` no longer report `null`.** They were read from the
+  client's own `system`, which the bridge never populates — it doesn't call
+  `getSystem()`. Both now come from the blob stored at pairing, which is where
+  `featuring.jsonfeatures` actually lives. `AmbilightSource` keeps that blob.
+
 ## [0.3.0] — 2026-09-13
 
 ### Added

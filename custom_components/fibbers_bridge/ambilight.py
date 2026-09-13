@@ -128,6 +128,10 @@ class AmbilightSource:
         self.entry_id = entry_id
         self.host: str = data[CONF_HOST]
         system = data.get("system") or {}
+        # Kept whole: it carries `featuring.jsonfeatures`, which says what the TV
+        # claims its API offers. The client only populates its own copy after a
+        # `getSystem()` we never make, so this is the reliable source.
+        self.system: Mapping[str, Any] = system
         # A friendly, stable name for logs / the source list / the sensor.
         self.name: str = system.get("name") or f"Philips TV ({self.host})"
         self.model: str | None = system.get("model")

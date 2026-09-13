@@ -27,6 +27,7 @@ Nothing here mutates the TV. Every probe is a read.
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -40,7 +41,14 @@ _LOGGER = logging.getLogger(__name__)
 _HTTP_PORT = 1925
 _HTTPS_PORT = 1926
 
-# Endpoint bodies we never want in a service response (a screenshot is a JPEG).
+# Two different limits, for two different jobs.
+#
+# We parse any JSON small enough to be sane (a settings tree runs to several KB;
+# anything past a megabyte is not a menu). We *inline* far less than that, because
+# a service response is read by a human — so a large body is parsed, mined for
+# node ids, and then dropped from the result unless `include_raw` asks for it.
+# Non-JSON bodies (a screenshot is a JPEG) are never parsed at all.
+_MAX_JSON_BYTES = 1_048_576
 _MAX_PREVIEW_BYTES = 4096
 
 # How long to wait on a single probe. A TV that is awake answers in well under a
@@ -91,6 +99,38 @@ def verdict_for(status: int | None) -> str:
     if status == 404:
         return "not_implemented"
     return "unexpected"
+
+
+def advertised_features(system: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Pull `featuring.jsonfeatures` / `systemfeatures` out of a system blob."""
+    featuring = (system or {}).get("featuring") or {}
+    if not isinstance(featuring, Mapping):
+        return {"jsonfeatures": None, "systemfeatures": None}
+    return {
+        "jsonfeatures": featuring.get("jsonfeatures"),
+        "systemfeatures": featuring.get("systemfeatures"),
+    }
+
+
+def feature_advertised(system: Mapping[str, Any] | None, feature: str) -> bool:
+    """Whether the TV lists `feature` in its advertised json features."""
+    jsonfeatures = advertised_features(system).get("jsonfeatures")
+    return isinstance(jsonfeatures, Mapping) and feature in jsonfeatures
+
+
+def trim_previews(
+    results: dict[str, dict[str, Any]], limit: int = _MAX_PREVIEW_BYTES
+) -> dict[str, dict[str, Any]]:
+    """Drop parsed bodies too large to read, flagging that we did.
+
+    Called after the nodes have been mined out, so a big settings tree still
+    counts towards the verdict without landing in the response.
+    """
+    for result in results.values():
+        if "json" in result and result.get("bytes", 0) > limit:
+            del result["json"]
+            result["json_omitted"] = True
+    return results
 
 
 def collect_nodes(structure: Any, _depth: int = 0) -> list[dict[str, Any]]:
@@ -207,9 +247,16 @@ async def _probe_one(client: Any, host: str, endpoint: Endpoint) -> dict[str, An
     result["content_type"] = response.headers.get("content-type")
     result["bytes"] = len(body)
 
-    # Only JSON small enough to be readable comes back in the response; a
-    # screenshot is a JPEG and belongs nowhere near a service result.
-    if response.status_code == 200 and len(body) <= _MAX_PREVIEW_BYTES:
+    # Parse by content type, not by size: an 8 KB settings tree is exactly the
+    # payload this probe exists to find, and capping it here is how a real hit
+    # gets mistaken for a stub. Oversized bodies are trimmed later, once their
+    # node ids have been read out.
+    content_type = result["content_type"] or ""
+    if (
+        response.status_code == 200
+        and "json" in content_type
+        and len(body) <= _MAX_JSON_BYTES
+    ):
         try:
             result["json"] = response.json()
         except ValueError:
@@ -238,24 +285,26 @@ async def probe_capabilities(
     except Exception as err:  # noqa: BLE001 - probe anyway; the statuses will tell
         report["transport_error"] = str(err)
 
-    system = getattr(client, "system", None) or {}
-    featuring = system.get("featuring", {}) if isinstance(system, dict) else {}
-    report["os_type"] = getattr(client, "os_type", None)
-    report["advertised"] = {
-        "jsonfeatures": featuring.get("jsonfeatures"),
-        "systemfeatures": featuring.get("systemfeatures"),
-    }
-    report["menuitems_advertised"] = bool(
-        client.json_feature_supported("menuitems", "Setup_Menu")
-    )
+    # Prefer the blob stored at pairing: the client only fills its own copy after
+    # a `getSystem()` the bridge never makes, so reading it there reports null.
+    system = getattr(source, "system", None) or getattr(client, "system", None) or {}
+    advertised = advertised_features(system)
+    systemfeatures = advertised.get("systemfeatures") or {}
+    report["os_type"] = (
+        systemfeatures.get("os_type")
+        if isinstance(systemfeatures, Mapping)
+        else None
+    ) or system.get("os_type")
+    report["advertised"] = advertised
+    report["menuitems_advertised"] = feature_advertised(system, "menuitems")
 
     results: dict[str, dict[str, Any]] = {}
     for endpoint in PROBE_ENDPOINTS:
         results[endpoint.path] = await _probe_one(client, source.host, endpoint)
-    report["endpoints"] = results
-
     structure = results.get(SETTINGS_PATH, {}).get("json")
     nodes = collect_nodes(structure)
+    # Mine first, then trim — otherwise a large tree reads as an empty one.
+    report["endpoints"] = trim_previews(results)
     report["settings_nodes"] = len(nodes)
     # A full menu runs to hundreds of nodes; a sample is enough to act on and
     # keeps the service response readable. `include_raw` gets the lot.
