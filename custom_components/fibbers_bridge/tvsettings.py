@@ -48,14 +48,42 @@ def _children(node: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 
 def _cur_data(cur: Mapping[str, Any] | None) -> Mapping[str, Any]:
-    """The type-specific payload, tolerant of value / value.data nesting."""
-    if not isinstance(cur, Mapping):
-        return {}
-    value = cur.get("value")
-    if isinstance(value, Mapping):
-        inner = value.get("data")
-        return inner if isinstance(inner, Mapping) else value
-    return {}
+    """The type-specific data dict of a parsed current entry."""
+    data = cur.get("data") if isinstance(cur, Mapping) else None
+    return data if isinstance(data, Mapping) else {}
+
+
+def parse_current(resp: Mapping[str, Any] | None) -> dict[int, dict[str, Any]]:
+    """{node_id: entry} from a menuitems/settings/current response.
+
+    The TV replies `values:[{value:{Nodeid,Controllable,Available,string_id,data}}]`
+    — capitalised, under `values` not `nodes`. Some firmwares put `data` beside
+    `value` rather than inside it, so recover that too.
+    """
+    out: dict[int, dict[str, Any]] = {}
+    for entry in (resp or {}).get("values", []):
+        value = entry.get("value") if isinstance(entry, Mapping) else None
+        if not isinstance(value, Mapping):
+            continue
+        nid = value.get("Nodeid")
+        if not isinstance(nid, int):
+            continue
+        data = value.get("data")
+        if not isinstance(data, Mapping) and isinstance(entry.get("data"), Mapping):
+            data = entry["data"]
+        out[nid] = {
+            "node_id": nid,
+            "controllable": bool(value.get("Controllable")),
+            "available": bool(value.get("Available")),
+            "string_id": value.get("string_id"),
+            "data": data if isinstance(data, Mapping) else {},
+        }
+    return out
+
+
+def update_body(node_id: int, payload: Mapping[str, Any]) -> dict[str, Any]:
+    """menuitems/settings/update envelope — Nodeid is capitalised on write."""
+    return {"values": [{"value": {"Nodeid": node_id, "data": payload}}]}
 
 
 def control_value(kind: str, data: Mapping[str, Any]) -> Any:
@@ -115,6 +143,7 @@ def _control(
         "value": control_value(kind, cur_data) if present else None,
         "controllable": bool(cur.get("controllable")) if present else False,
         "available": bool(cur.get("available")) if present else False,
+        "read_failed": not present,
         "options": None,
     }
     if kind == "slider":
@@ -192,12 +221,32 @@ async def read_current(
 ) -> dict[int, dict[str, Any]]:
     body = {"nodes": [{"nodeid": nid} for nid in node_ids]}
     resp = await jointspace.request_json(source, "POST", _CURRENT, body)
-    out: dict[int, dict[str, Any]] = {}
-    for node in (resp or {}).get("nodes", []):
-        nid = _node_id(node)
-        if nid is not None:
-            out[nid] = node
-    return out
+    return parse_current(resp)
+
+
+# JointSpace rejects large `current` batches; ha-philipsjs chunks at the same size.
+_SWEEP_CHUNK = 10
+
+
+async def sweep_settings(
+    source: AmbilightSource, start: int, end: int, step: int = 1
+) -> dict[str, Any]:
+    """Read every node id in [start, end] and report the ones that answered."""
+    ids = list(range(start, end + 1, step if step > 0 else 1))
+    found: list[dict[str, Any]] = []
+    for i in range(0, len(ids), _SWEEP_CHUNK):
+        for nid, entry in (await read_current(source, ids[i : i + _SWEEP_CHUNK])).items():
+            data = entry.get("data") or {}
+            found.append(
+                {
+                    "node_id": nid,
+                    "string_id": entry.get("string_id"),
+                    "controllable": entry.get("controllable"),
+                    "value": data.get("value", data.get("selected_item")),
+                }
+            )
+    found.sort(key=lambda f: f["node_id"])
+    return {"scanned": len(ids), "found": found}
 
 
 async def write_node(
@@ -219,8 +268,7 @@ async def write_node(
         }
 
     payload = data if data is not None else write_payload(kind, value, cur_data)
-    body = {"values": [{"value": {"nodeid": node_id, "data": payload}}]}
-    await jointspace.request_json(source, "POST", _UPDATE, body)
+    await jointspace.request_json(source, "POST", _UPDATE, update_body(node_id, payload))
 
     after = await read_current(source, [node_id])
     before_v = control_value(kind, cur_data)

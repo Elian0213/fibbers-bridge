@@ -197,6 +197,14 @@ read-only). A node missing from the current read still ships with `value: null`,
 writes it ignores, so trust **`changed`**, not the call — a card must revert an
 optimistic update when `changed` is false.
 
+A control the read never returned is marked `read_failed: true` (distinct from the
+TV reporting `available: false`).
+
+`fibbers_bridge.tv_settings_sweep` — `{ entry_id, start, end, step? }`, **returns**
+`{ scanned, found: [{ node_id, string_id, controllable, value }] }`. A diagnostic
+that reads a range of ids to find nodes the structure omits; a few hundred requests,
+so run it by hand, not from a dashboard.
+
 Bodies are parsed by content type, not size: JSON up to 1 MB is parsed and mined
 for node ids, non-JSON never is. A parsed body over 4 KB is dropped from the
 response and flagged `json_omitted: true` — it still counts towards

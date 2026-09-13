@@ -3,6 +3,31 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.1] — 2026-09-13
+
+### Fixed
+
+- **Settings reads returned nothing.** `read_current` parsed `response["nodes"]`,
+  but `menuitems/settings/current` replies under `values`, each wrapped in `value`
+  with a capitalised `Nodeid` / `Controllable` / `Available` (confirmed against
+  `ha-philipsjs`'s TypedDicts). So every node read empty and the card greyed out
+  all its controls — nothing to do with the missing LED strip. Parsing now matches
+  the real shape and recovers `data` when a firmware puts it beside `value`.
+- **Writes used the wrong case.** The update envelope sent `nodeid`; the TV wants
+  `Nodeid`. Fixed, so a write lands the moment a node reports `Controllable: true`.
+
+### Added
+
+- **`tv_settings_sweep`** — a diagnostic that reads a range of node ids and reports
+  the ones that answer, to find nodes the structure tree omits (e.g. picture
+  settings). The capability probe now also covers the `current` POST, so a dead
+  read path can't ship unnoticed again.
+
+### Changed
+
+- `tv_settings_list` marks a control the read never returned as `read_failed`,
+  distinct from the TV reporting it `available: false`.
+
 ## [0.5.0] — 2026-09-13
 
 ### Added

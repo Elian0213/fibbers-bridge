@@ -64,6 +64,7 @@ class Endpoint:
     path: str
     method: str
     purpose: str
+    payload: dict[str, Any] | None = None
 
 
 # Ordered most- to least-interesting; the summary reads the first hit.
@@ -77,6 +78,12 @@ PROBE_ENDPOINTS: tuple[Endpoint, ...] = (
     Endpoint("ambilight/currentconfiguration", "GET", "Current Ambilight preset"),
     Endpoint("ambilight/power", "GET", "Ambilight on/off"),
     Endpoint("ambilight/topology", "GET", "Ambilight LED layout"),
+    Endpoint(
+        "menuitems/settings/current",
+        "POST",
+        "Read a settings node (root, always exists) — proves the read path",
+        {"nodes": [{"nodeid": 1}]},
+    ),
     Endpoint("screenshot", "GET", "Still frame of what is on screen"),
     Endpoint("applications", "GET", "Installed app list"),
 )
@@ -233,7 +240,10 @@ async def _probe_one(client: Any, host: str, endpoint: Endpoint) -> dict[str, An
     }
     try:
         response = await client.session.request(
-            endpoint.method, endpoint_url(client, host, endpoint.path), timeout=_TIMEOUT
+            endpoint.method,
+            endpoint_url(client, host, endpoint.path),
+            json=endpoint.payload,
+            timeout=_TIMEOUT,
         )
     except Exception as err:  # noqa: BLE001 - httpx errors vary by failure mode
         result["status"] = None

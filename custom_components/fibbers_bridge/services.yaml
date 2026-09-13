@@ -288,3 +288,36 @@ tv_settings_set:
         value. Overrides `value`.
       selector:
         object:
+
+tv_settings_sweep:
+  name: Sweep TV settings nodes
+  description: >-
+    Diagnostic: read every settings node id in a range and report the ones that
+    answer, to discover nodes the structure tree omits. A few hundred requests -
+    run it by hand, not from a dashboard.
+  fields:
+    entry_id:
+      name: Philips Ambilight TV
+      description: The paired TV to sweep.
+      required: true
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+    start:
+      name: First node id
+      required: true
+      example: 1
+      selector:
+        number: { min: 0, max: 100000, mode: box }
+    end:
+      name: Last node id
+      required: true
+      example: 300
+      selector:
+        number: { min: 0, max: 100000, mode: box }
+    step:
+      name: Step
+      description: Id increment.
+      default: 1
+      selector:
+        number: { min: 1, max: 1000, mode: box }

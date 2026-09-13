@@ -123,6 +123,16 @@
         "value": { "name": "Value", "description": "The new value (number, option id, or colour int)." },
         "data": { "name": "Raw data", "description": "Advanced: the exact update payload; overrides value." }
       }
+    },
+    "tv_settings_sweep": {
+      "name": "Sweep TV settings nodes",
+      "description": "Diagnostic: read every settings node id in a range and report the ones that answer.",
+      "fields": {
+        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to sweep." },
+        "start": { "name": "First node id", "description": "Start of the id range." },
+        "end": { "name": "Last node id", "description": "End of the id range." },
+        "step": { "name": "Step", "description": "Id increment." }
+      }
     }
   }
 }

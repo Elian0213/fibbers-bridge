@@ -94,6 +94,12 @@ _TV_SETTINGS_SET_FIELDS = {
     vol.Optional("value"): object,  # any JSON scalar/list the node takes
     vol.Optional("data"): dict,
 }
+_TV_SETTINGS_SWEEP_FIELDS = {
+    vol.Required("entry_id"): cv.string,
+    vol.Required("start"): vol.Coerce(int),
+    vol.Required("end"): vol.Coerce(int),
+    vol.Optional("step", default=1): vol.All(vol.Coerce(int), vol.Range(min=1)),
+}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -214,6 +220,15 @@ def _register_global(hass: HomeAssistant) -> None:
         except JointSpaceError as err:
             raise HomeAssistantError(str(err)) from err
 
+    async def _svc_tv_settings_sweep(call: ServiceCall) -> ServiceResponse:
+        source = get_source(hass, call.data["entry_id"])
+        try:
+            return await tvsettings.sweep_settings(
+                source, call.data["start"], call.data["end"], call.data["step"]
+            )
+        except JointSpaceError as err:
+            raise HomeAssistantError(str(err)) from err
+
     hass.services.async_register(
         DOMAIN, "atv_swipe", _svc_swipe, schema=vol.Schema(_SWIPE_FIELDS)
     )
@@ -268,6 +283,13 @@ def _register_global(hass: HomeAssistant) -> None:
         "tv_settings_set",
         _svc_tv_settings_set,
         schema=vol.Schema(_TV_SETTINGS_SET_FIELDS),
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "tv_settings_sweep",
+        _svc_tv_settings_sweep,
+        schema=vol.Schema(_TV_SETTINGS_SWEEP_FIELDS),
         supports_response=SupportsResponse.ONLY,
     )
 
