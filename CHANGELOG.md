@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] — 2026-09-13
+
+### Fixed
+
+- **Green CI at the tag.** The 0.2.0 pairing-flow test constructed
+  `haphilipsjs.PairingFailure` without its required `data` argument, so the test
+  job failed on the 0.2.0 ref. The config flow itself was correct — no runtime
+  change — but the test is fixed so the released ref is green. Safe to skip if
+  0.2.0 is working for you.
+
 ## [0.2.0] — 2026-09-13
 
 A second capability: **Philips Ambilight → RGB light mirroring**. The TV already
