@@ -3,11 +3,35 @@
     "step": {
       "user": {
         "title": "Fibbers Bridge",
-        "description": "Add Fibbers Bridge. It exposes reusable services (Apple TV native touch, with more to come) that any card or automation can call. There's nothing to configure."
+        "description": "What do you want to add?",
+        "menu_options": {
+          "bridge": "Fibbers Bridge (reusable services)",
+          "philips": "Philips Ambilight TV (colour source)"
+        }
+      },
+      "philips": {
+        "title": "Philips Ambilight TV",
+        "description": "Enter the TV's IP address. It must be on and on the same network. You'll then confirm a PIN shown on the TV.",
+        "data": {
+          "host": "IP address"
+        }
+      },
+      "pair": {
+        "title": "Enter the PIN",
+        "description": "A PIN is showing on your TV. Type it here to finish pairing.",
+        "data": {
+          "pin": "PIN"
+        }
       }
     },
+    "error": {
+      "cannot_connect": "Couldn't reach the TV's JointSpace API. Check the IP address and that the TV is on.",
+      "invalid_pin": "That PIN didn't match what's on the TV. Try again."
+    },
     "abort": {
-      "single_instance_allowed": "Fibbers Bridge is already configured; only one instance is needed."
+      "single_instance_allowed": "Fibbers Bridge is already configured; only one instance is needed.",
+      "already_configured": "This TV is already set up.",
+      "pairing_failure": "Pairing with the TV failed. Make sure it's on and try again."
     }
   },
   "services": {
@@ -39,6 +63,31 @@
       "fields": {
         "device_id": { "name": "Apple TV", "description": "The Apple TV device to control." },
         "action": { "name": "Action", "description": "The kind of click." }
+      }
+    },
+    "ambilight_start": {
+      "name": "Start ambilight sync",
+      "description": "Mirror a Philips TV's Ambilight colour onto an RGB light, live, for any on-screen source.",
+      "fields": {
+        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to read colour from." },
+        "target": { "name": "Light", "description": "The RGB light that should mirror the TV." },
+        "rate": { "name": "Update rate", "description": "Colour updates per second." },
+        "mode": { "name": "Colour source", "description": "processed (LED output) or measured (raw screen)." }
+      }
+    },
+    "ambilight_stop": {
+      "name": "Stop ambilight sync",
+      "description": "Stop mirroring the TV colour onto a light.",
+      "fields": {
+        "target": { "name": "Light", "description": "The light to stop mirroring." }
+      }
+    },
+    "ambilight_probe": {
+      "name": "Probe ambilight",
+      "description": "One-shot read of a TV's current Ambilight colour, raw payload and topology.",
+      "fields": {
+        "entry_id": { "name": "Philips Ambilight TV", "description": "The paired TV to read from." },
+        "mode": { "name": "Colour source", "description": "Which layer to read." }
       }
     }
   }

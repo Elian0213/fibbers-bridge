@@ -110,3 +110,78 @@ atv_click:
             - single
             - double
             - hold
+
+ambilight_start:
+  name: Start ambilight sync
+  description: >-
+    Mirror a Philips TV's Ambilight colour onto an RGB light. The TV derives the
+    colour from whatever is on screen - including a games console or any HDMI
+    source - so the light tracks it live. Reads over the local JointSpace API.
+  fields:
+    entry_id:
+      name: Philips Ambilight TV
+      description: The paired TV to read colour from.
+      required: true
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+    target:
+      name: Light
+      description: The RGB light that should mirror the TV.
+      required: true
+      selector:
+        entity:
+          domain: light
+    rate:
+      name: Update rate
+      description: How many colour updates per second (higher = smoother, more Wi-Fi traffic).
+      default: 6
+      selector:
+        number: { min: 1, max: 20, unit_of_measurement: Hz, mode: slider }
+    mode:
+      name: Colour source
+      description: >-
+        "processed" is what the TV's own LEDs show; "measured" is the raw screen
+        sample before processing.
+      default: processed
+      selector:
+        select:
+          options:
+            - processed
+            - measured
+
+ambilight_stop:
+  name: Stop ambilight sync
+  description: Stop mirroring the TV colour onto a light.
+  fields:
+    target:
+      name: Light
+      description: The light to stop mirroring.
+      required: true
+      selector:
+        entity:
+          domain: light
+
+ambilight_probe:
+  name: Probe ambilight
+  description: >-
+    One-shot read of a TV's current Ambilight colour, raw payload and LED
+    topology. Returns the data as a service response - use it to confirm pairing
+    and see live values without wiring up a light.
+  fields:
+    entry_id:
+      name: Philips Ambilight TV
+      description: The paired TV to read from.
+      required: true
+      selector:
+        config_entry:
+          integration: fibbers_bridge
+    mode:
+      name: Colour source
+      description: Which layer to read.
+      default: processed
+      selector:
+        select:
+          options:
+            - processed
+            - measured

@@ -61,6 +61,54 @@ mapping the surface's local x/y to 0–1000.
 
 ---
 
+## Ambilight (Philips TV → RGB light)
+
+Mirror the colour a Philips Ambilight TV derives from its screen onto any
+colour-capable light. Because the TV computes the colour, this works for **any
+on-screen source** — a games console, any HDMI input — not just media with
+metadata. Add a TV first via the config flow (Settings → Devices & Services →
+Fibbers Bridge → *Philips Ambilight TV*, then confirm the PIN it shows). The TV's
+config-entry id is the `entry_id` used below.
+
+### Services
+
+`fibbers_bridge.ambilight_start`
+
+| Field | Type | Req | Default | Notes |
+| --- | --- | --- | --- | --- |
+| `entry_id` | string | ✓ | — | a paired Philips TV config entry |
+| `target` | entity_id | ✓ | — | an RGB-capable `light.*` |
+| `rate` | int | | 6 | 1–20 Hz |
+| `mode` | enum | | `processed` | `processed` \| `measured` |
+
+`fibbers_bridge.ambilight_stop` — `{ target: entity_id }`
+
+`fibbers_bridge.ambilight_probe` — `{ entry_id, mode? }`, **returns a response**:
+`{ ok, color: [r,g,b] | null, topology, raw, host, name }`.
+
+### Websocket commands (custom cards)
+
+- `fibbers_bridge/ambilight_subscribe` — `{ target?: entity_id }`. A subscription:
+  emits an event per colour update; the current snapshot is replayed immediately
+  on subscribe. Each event:
+  ```js
+  { target, source, source_name, rgb: [r,g,b] | null, active, available,
+    health: { sent, errors, last_error } }
+  ```
+- `fibbers_bridge/ambilight_sources` → `{ sources: [{ entry_id, name, host, available }] }`
+
+```js
+const unsub = await hass.connection.subscribeMessage(
+  (evt) => { /* evt.rgb → paint your visualiser */ },
+  { type: "fibbers_bridge/ambilight_subscribe", target: "light.tv_strip" },
+);
+```
+
+Runtime errors: an unknown/un-paired source, or a target that can't accept an
+`rgb_color`, raise `ServiceValidationError` with a user-facing message.
+
+---
+
 ## Discovery / feature detection
 
 Check before you offer the feature, so your card degrades cleanly when the bridge

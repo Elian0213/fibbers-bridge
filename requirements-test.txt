@@ -1,3 +1,8 @@
 # Test-only deps. pytest-homeassistant-custom-component pins a matching
 # homeassistant + pytest + pytest-asyncio, so we don't pin those ourselves.
 pytest-homeassistant-custom-component
+
+# Manifest requirement, pulled in here so the Philips pairing config flow can be
+# exercised under test (runtime imports it lazily; the flow test patches
+# haphilipsjs.PhilipsTV).
+ha-philipsjs==3.2.5

@@ -3,6 +3,50 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] — 2026-09-13
+
+A second capability: **Philips Ambilight → RGB light mirroring**. The TV already
+computes a colour, per frame, from whatever is on screen — a games console, any
+HDMI input, not just media with metadata. The bridge reads those colours off the
+local JointSpace API and relays them to a light, so a Tuya (or any RGB) strip
+tracks the screen live. Home Assistant's core `philips_js` integration
+deliberately won't surface these values ("would overload the event bus"), which
+is exactly the gap the bridge exists to fill.
+
+### Added
+
+- **Philips Ambilight TV source (config flow + PIN pairing).** Add one from
+  Settings → Devices & Services → Fibbers Bridge → *Philips Ambilight TV*: enter
+  the IP, confirm the PIN the TV shows, done. Pairing follows the same
+  digest-auth JointSpace handshake as core's `philips_js` (via `ha-philipsjs`);
+  credentials are stored in the config entry. Works on Titan OS sets (JointSpace
+  v6).
+- **`fibbers_bridge.ambilight_start` / `ambilight_stop`.** Start or stop mirroring
+  a source TV's Ambilight colour onto an RGB light, with configurable update rate
+  (1–20 Hz) and colour source (`processed` / `measured`). Relays via
+  `light.turn_on`, so it works with any colour-capable light, Tuya included.
+- **`fibbers_bridge.ambilight_probe`.** One-shot read returning the current
+  colour, raw payload and LED topology as a service response — confirm pairing
+  and see live values without wiring up a light first.
+- **`fibbers_bridge/ambilight_subscribe` + `/ambilight_sources` websocket
+  commands.** A live colour stream (off the event bus) for custom cards, plus a
+  picker of paired TVs. The current snapshot is replayed on subscribe.
+- **Ambilight colour sensor + diagnostics.** Each paired TV exposes a low-rate
+  sensor (last colour as hex, RGB + health as attributes) for Developer Tools and
+  automations, and a redacted diagnostics dump for troubleshooting.
+
+### Changed
+
+- The bridge now supports multiple config entries (the base services entry plus
+  one per Philips TV), so `single_config_entry` is dropped; a duplicate base
+  entry is still prevented by unique-id.
+
+### Developer experience
+
+- Colour averaging, dead-band and rate-clamp are pure, unit-tested helpers;
+  packet flooding of the bulb is avoided by skipping sub-perceptible changes.
+  Gated debug logging traces every poll/relay tick.
+
 ## [0.1.2] — 2026-09-12
 
 ### Added
