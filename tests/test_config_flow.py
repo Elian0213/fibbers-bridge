@@ -86,7 +86,9 @@ async def test_pair_philips_wrong_pin_shows_error(hass: HomeAssistant) -> None:
     from custom_components.fibbers_bridge.config_flow import PairingInvalidPin
 
     hub = _fake_hub()
-    hub.pairGrant = AsyncMock(side_effect=PairingInvalidPin())
+    hub.pairGrant = AsyncMock(
+        side_effect=PairingInvalidPin({"error_id": "INVALID_PIN"})
+    )
     with patch("haphilipsjs.PhilipsTV", return_value=hub):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": "user"}
