@@ -178,7 +178,7 @@ class _Session:
         self._responses = responses
         self.seen: list[str] = []
 
-    async def request(self, method, url, timeout=None):
+    async def request(self, method, url, json=None, timeout=None):
         path = url.split("/6/", 1)[1]
         self.seen.append(path)
         result = self._responses.get(path, _Response(404))
