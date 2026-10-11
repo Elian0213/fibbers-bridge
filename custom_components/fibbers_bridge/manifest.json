@@ -6,7 +6,7 @@
   "config_flow": true,
   "documentation": "https://github.com/Elian0213/fibbers-bridge",
   "integration_type": "service",
-  "iot_class": "local_push",
+  "iot_class": "local_polling",
   "issue_tracker": "https://github.com/Elian0213/fibbers-bridge/issues",
   "requirements": ["pyatv==0.18.0", "ha-philipsjs==3.2.5"],
   "version": "0.6.0"
