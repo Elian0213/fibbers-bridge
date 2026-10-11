@@ -3,6 +3,31 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — 2026-10-11
+
+Apple TV touch you can lean on: every phase in order, nothing left pressed.
+Pairs with Fibbers 2.1.0.
+
+### Fixed
+
+- **Apple TV touch is sequenced per device.** Press/hold/release reach pyatv in
+  arrival order, overlapping swipes no longer interleave, a `hold` queued behind a
+  slow call is coalesced with newer ones, every call is time-boxed, and a touch that
+  fails mid-gesture (or goes quiet for 5 s) is released instead of left pressed.
+- **The touch feature gate checked names pyatv doesn't have** (`TouchAction`,
+  `TouchClick`), so it never ran; it now checks `Action` / `Click` and only refuses
+  what pyatv reports as unsupported or unavailable.
+
+### Removed
+
+- The pre-2024.6 `hass.data["apple_tv"]` fallback (the bridge requires HA 2025.1),
+  the unused `PROBE_KINDS` constant, and the never-honoured `hold_ms` key-step field.
+
+### Changed
+
+- `manifest.json` `iot_class` is `local_polling` (Ambilight polls the TV).
+- Docs: `atv_touch` (not repeated swipes) is the recommended scrub stream.
+
 ## [0.6.0] — 2026-09-13
 
 Key sequences that actually replay, and a journal so finding out what a device
