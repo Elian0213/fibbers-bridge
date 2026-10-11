@@ -21,8 +21,8 @@ that any card or automation can call.
 - **`config_flow.py`** — an input-less Apple TV entry, or a Philips TV paired by PIN.
 - **`services.yaml` / `strings.json` / `translations/en.json`** — the service
   schemas + UI copy (Developer Tools → Actions).
-- **`manifest.json`** — `pyatv` and `ha-philipsjs` pinned to match Home Assistant
-  core's `apple_tv` / `philips_js`, and `after_dependencies: ["apple_tv"]` so it
+- **`manifest.json`** — `pyatv` and `ha-philipsjs` as minimum versions (`>=`), so they
+  follow Home Assistant core's `apple_tv` / `philips_js` (hassfest rejects exact pins), and `after_dependencies: ["apple_tv"]` so it
   loads after it.
 
 ## Build & test

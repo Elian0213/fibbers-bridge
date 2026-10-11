@@ -25,7 +25,9 @@ Pairs with Fibbers 2.1.0.
 
 ### Changed
 
-- `manifest.json` `iot_class` is `local_polling` (Ambilight polls the TV).
+- `manifest.json` `iot_class` is `local_polling` (Ambilight polls the TV), and the
+  `pyatv` / `ha-philipsjs` requirements are minimums so they follow Home Assistant
+  core (hassfest now rejects pinning a package core ships).
 - Docs: `atv_touch` (not repeated swipes) is the recommended scrub stream.
 
 ## [0.6.0] — 2026-09-13
