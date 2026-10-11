@@ -85,5 +85,4 @@ _OPPOSITE = {
 
 PROBE_STORAGE_KEY = f"{DOMAIN}.probes"
 PROBE_STORAGE_VERSION = 1
-PROBE_KINDS = ("remote_key", "service", "http", "note")
 PROBE_OUTCOMES = ("works", "nothing", "error", "unknown")

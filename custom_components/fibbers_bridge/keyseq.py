@@ -70,10 +70,7 @@ def _resolve_wait(key: str, overrides: Mapping[str, Any], defaults: Mapping[str,
 
 
 def _key_step(key: str, overrides: Mapping[str, Any], defaults: Mapping[str, Any]) -> dict[str, Any]:
-    step = {"key": key, "wait_ms": _resolve_wait(key, overrides, defaults)}
-    if "hold_ms" in overrides:
-        step["hold_ms"] = int(overrides["hold_ms"])
-    return step
+    return {"key": key, "wait_ms": _resolve_wait(key, overrides, defaults)}
 
 
 def expand_steps(steps: list[Step], defaults: Mapping[str, Any] | None = None) -> list[dict[str, Any]]:

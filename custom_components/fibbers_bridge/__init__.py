@@ -40,6 +40,7 @@ from homeassistant.helpers import config_validation as cv, device_registry as dr
 from .ambilight import (
     AmbilightSource,
     add_subscriber,
+    ensure_store,
     get_source,
     list_sources,
     snapshot,
@@ -207,11 +208,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 def _register_global(hass: HomeAssistant) -> None:
     """Register services + websocket commands once, idempotently."""
-    store = hass.data.setdefault(DOMAIN, {})
-    store.setdefault("sources", {})
-    store.setdefault("syncs", {})
-    store.setdefault("subscribers", set())
-    store.setdefault("probe_subscribers", set())
+    store = ensure_store(hass)
     if store.get("registered"):
         return
 
@@ -700,8 +697,7 @@ def _ws_ambilight_sources(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "fibbers_bridge/tv_settings_list",
-        vol.Required("entry_id"): cv.string,
-        vol.Optional("refresh", default=False): cv.boolean,
+        **_TV_SETTINGS_LIST_FIELDS,
     }
 )
 @websocket_api.async_response
@@ -722,8 +718,7 @@ async def _ws_tv_settings_list(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "fibbers_bridge/tv_settings_get",
-        vol.Required("entry_id"): cv.string,
-        vol.Required("node_ids"): [vol.Coerce(int)],
+        **_TV_SETTINGS_GET_FIELDS,
     }
 )
 @websocket_api.async_response
@@ -744,10 +739,7 @@ async def _ws_tv_settings_get(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "fibbers_bridge/tv_settings_set",
-        vol.Required("entry_id"): cv.string,
-        vol.Required("node_id"): vol.Coerce(int),
-        vol.Optional("value"): object,
-        vol.Optional("data"): dict,
+        **_TV_SETTINGS_SET_FIELDS,
     }
 )
 @websocket_api.async_response

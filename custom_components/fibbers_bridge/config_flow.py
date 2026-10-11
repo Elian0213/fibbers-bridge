@@ -97,7 +97,7 @@ class FibbersBridgeConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _async_connect(self, host: str) -> None:
         """Build a client and read /system, trying each supported API version."""
-        from haphilipsjs import ConnectionFailure, PhilipsTV  # noqa: PLC0415
+        from haphilipsjs import PhilipsTV  # noqa: PLC0415
 
         last_err: Exception | None = None
         for api_version in API_VERSIONS:
@@ -105,10 +105,7 @@ class FibbersBridgeConfigFlow(ConfigFlow, domain=DOMAIN):
             try:
                 await hub.getSystem()
                 await hub.setTransport(hub.secured_transport)
-            except ConnectionFailure as err:  # pragma: no cover - network dependent
-                last_err = err
-                continue
-            except Exception as err:  # noqa: BLE001
+            except Exception as err:  # noqa: BLE001 - ConnectionFailure or anything else
                 last_err = err
                 continue
             if hub.system:
@@ -151,8 +148,6 @@ class FibbersBridgeConfigFlow(ConfigFlow, domain=DOMAIN):
             _LOGGER.debug("Philips pairGrant failed: %s", err)
             return self.async_abort(reason="pairing_failure")
         else:
-            self._hub.username = username
-            self._hub.password = password
             return self._create_source_entry(username, password)
 
         return self.async_show_form(

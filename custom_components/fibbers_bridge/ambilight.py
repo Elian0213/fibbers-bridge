@@ -34,6 +34,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from .const import (
     CONF_API_VERSION,
     CONF_SECURED_TRANSPORT,
+    CONF_SYSTEM,
     DEFAULT_DEADBAND,
     DEFAULT_MODE,
     DEFAULT_RATE_HZ,
@@ -127,7 +128,7 @@ class AmbilightSource:
         self.hass = hass
         self.entry_id = entry_id
         self.host: str = data[CONF_HOST]
-        system = data.get("system") or {}
+        system = data.get(CONF_SYSTEM) or {}
         # Kept whole: it carries `featuring.jsonfeatures`, which says what the TV
         # claims its API offers. The client only populates its own copy after a
         # `getSystem()` we never make, so this is the reliable source.
@@ -179,16 +180,19 @@ class AmbilightSource:
             self._structure = None
         return self._structure
 
+    async def _read_layers(self, mode: str) -> Any:
+        """Fetch the measured or processed per-zone layers (transport already up)."""
+        if mode == MODE_MEASURED:
+            await self._client.getAmbilightMeasured()
+            return self._client.ambilight_measured
+        await self._client.getAmbilightProcessed()
+        return self._client.ambilight_processed
+
     async def read_color(self, mode: str = DEFAULT_MODE) -> RGB | None:
         """Read the current averaged Ambilight colour, or None if unavailable."""
         try:
             await self._ensure_transport()
-            if mode == MODE_MEASURED:
-                await self._client.getAmbilightMeasured()
-                layers = self._client.ambilight_measured
-            else:
-                await self._client.getAmbilightProcessed()
-                layers = self._client.ambilight_processed
+            layers = await self._read_layers(mode)
         except Exception as err:  # noqa: BLE001 - network/library errors vary
             self._transport_ready = False
             self.available = False
@@ -217,12 +221,7 @@ class AmbilightSource:
             await self._ensure_transport()
             await self._client.getAmbilightTopology()
             result["topology"] = self._client.ambilight_topology
-            if mode == MODE_MEASURED:
-                await self._client.getAmbilightMeasured()
-                layers = self._client.ambilight_measured
-            else:
-                await self._client.getAmbilightProcessed()
-                layers = self._client.ambilight_processed
+            layers = await self._read_layers(mode)
             result["color"] = average_zones(layers)
             result["raw"] = layers
             result["ok"] = result["color"] is not None
@@ -370,17 +369,21 @@ class AmbilightSync:
 # --- store helpers -------------------------------------------------------------
 
 
-def _store(hass: HomeAssistant) -> dict[str, Any]:
+def ensure_store(hass: HomeAssistant) -> dict[str, Any]:
+    """The integration's `hass.data` store, with every bucket present."""
     store = hass.data.setdefault(DOMAIN, {})
     store.setdefault("sources", {})
     store.setdefault("syncs", {})
     store.setdefault("subscribers", set())
+    store.setdefault("probe_subscribers", set())
     return store
+
+
 
 
 def get_source(hass: HomeAssistant, entry_id: str) -> AmbilightSource:
     """Return a registered source or raise a clear error."""
-    source = _store(hass)["sources"].get(entry_id)
+    source = ensure_store(hass)["sources"].get(entry_id)
     if source is None:
         raise ServiceValidationError(
             "That Philips Ambilight TV is not set up. Add it via "
@@ -398,7 +401,7 @@ def list_sources(hass: HomeAssistant) -> list[dict[str, Any]]:
             "host": s.host,
             "available": s.available,
         }
-        for s in _store(hass)["sources"].values()
+        for s in ensure_store(hass)["sources"].values()
     ]
 
 
@@ -417,7 +420,7 @@ async def start_sync(
             f"{target} can't accept an RGB colour — pick a light with a colour "
             "mode (rgb / rgbw / hs)."
         )
-    syncs: dict[str, AmbilightSync] = _store(hass)["syncs"]
+    syncs: dict[str, AmbilightSync] = ensure_store(hass)["syncs"]
     existing = syncs.get(target)
     if existing is not None:
         await existing.stop()
@@ -429,7 +432,7 @@ async def start_sync(
 
 async def stop_sync(hass: HomeAssistant, target: str) -> bool:
     """Stop the mirror driving a target light. Returns True if one was running."""
-    sync = _store(hass)["syncs"].pop(target, None)
+    sync = ensure_store(hass)["syncs"].pop(target, None)
     if sync is None:
         return False
     await sync.stop()
@@ -438,7 +441,7 @@ async def stop_sync(hass: HomeAssistant, target: str) -> bool:
 
 async def stop_all_syncs(hass: HomeAssistant, entry_id: str | None = None) -> None:
     """Stop every sync (optionally only those bound to one source)."""
-    syncs: dict[str, AmbilightSync] = _store(hass)["syncs"]
+    syncs: dict[str, AmbilightSync] = ensure_store(hass)["syncs"]
     for target, sync in list(syncs.items()):
         if entry_id is not None and sync.source.entry_id != entry_id:
             continue
@@ -449,7 +452,7 @@ async def stop_all_syncs(hass: HomeAssistant, entry_id: str | None = None) -> No
 @callback
 def add_subscriber(hass: HomeAssistant, send: Subscriber) -> Callable[[], None]:
     """Register a websocket subscriber; returns an unsubscribe callback."""
-    subs: set[Subscriber] = _store(hass)["subscribers"]
+    subs: set[Subscriber] = ensure_store(hass)["subscribers"]
     subs.add(send)
 
     @callback
@@ -461,7 +464,7 @@ def add_subscriber(hass: HomeAssistant, send: Subscriber) -> Callable[[], None]:
 
 def snapshot(hass: HomeAssistant, target: str | None = None) -> Iterable[dict[str, Any]]:
     """Current state of running syncs, for a card that just subscribed."""
-    syncs: dict[str, AmbilightSync] = _store(hass)["syncs"]
+    syncs: dict[str, AmbilightSync] = ensure_store(hass)["syncs"]
     for tgt, sync in syncs.items():
         if target is not None and tgt != target:
             continue
