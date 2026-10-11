@@ -64,7 +64,8 @@ internal API proves fragile.
 
 ## Growing into a capability registry
 
-Today there's one capability (Apple TV touch). The shape is meant to scale: each new
+Today there are two device families (Apple TV touch; Philips TV Ambilight, settings,
+key sequences and the probe journal). The shape is meant to scale: each new
 capability is a small module that registers its own service(s) + ws command(s) behind a
 stable name, with its own resolver + feature detection. The bridge stays a thin host;
 `docs/API.md` stays the single source of truth for the contract.

@@ -40,7 +40,7 @@ tied to any one card. Point [Fibbers](https://github.com/Elian0213/fibbers-home-
 1. HACS → ⋮ → **Custom repositories**
 2. Repository: `https://github.com/Elian0213/fibbers-bridge`, Category: **Integration** → **Add**
 3. Install **Fibbers Bridge**, then **restart** Home Assistant
-4. **Settings → Devices & Services → Add Integration → Fibbers Bridge** (nothing to configure)
+4. **Settings → Devices & Services → Add Integration → Fibbers Bridge** — the Apple TV entry needs no input; a Philips TV is paired with the PIN it shows
 
 **Requirements:** the core **Apple TV** integration set up and paired via the
 **Companion** protocol (tvOS 15+). Fibbers Bridge borrows its live connection.
@@ -80,7 +80,11 @@ snippet — is in **[docs/API.md](docs/API.md)**.
 | `fibbers_bridge.atv_touch` | One press / hold / release at a point (build custom gestures) |
 | `fibbers_bridge.atv_click` | Click the surface: single, double, or hold |
 | `fibbers_bridge.ambilight_start` / `_stop` | Mirror a Philips TV's Ambilight colour onto an RGB light |
-| `fibbers_bridge.tv_settings_list` / `_get` / `_set` | Read/write a Philips TV's Ambilight settings (brightness, styles, ambisleep) |
+| `fibbers_bridge.ambilight_probe` | One-shot Ambilight read: raw zones, averaged colour, topology |
+| `fibbers_bridge.tv_settings_list` / `_get` / `_set` / `_sweep` | Read/write a Philips TV's Ambilight settings (brightness, styles, ambisleep) |
+| `fibbers_bridge.tv_probe_settings` | Read-only check of which JointSpace endpoints the TV really serves |
+| `fibbers_bridge.tv_send_keys` / `tv_macro` / `tv_macro_list` | Replay a timed key sequence or a named per-model macro |
+| `fibbers_bridge.probe_*` | The probe journal: fire a stimulus, annotate, export, promote to a macro |
 
 Websocket equivalents exist for the streaming/low-latency ones. Full contract in
 **[docs/API.md](docs/API.md)**; Titan OS quirks and node ids in

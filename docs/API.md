@@ -56,8 +56,15 @@ const res = await hass.connection.sendMessagePromise({
 // → { ok: true }  |  ws error code "fibbers_bridge_error" with a message
 ```
 
-A card driving a live scrub typically sends one swipe per ~100–150 ms of drag,
-mapping the surface's local x/y to 0–1000.
+A card driving a live scrub should use `atv_touch`, not repeated swipes: send one
+`press` where the finger went down, `hold` frames as it moves (~30 Hz is plenty) and a
+`release` where it lifts, mapping the surface's local x/y to 0–1000. Each swipe is a
+complete press→release, so a stream of them reads as many separate flicks and tvOS
+never engages its scrubber.
+
+Per device, phases are applied in arrival order; a `hold` that queues behind a slow
+call is coalesced with newer ones (only the latest position is sent); each call is
+time-boxed; and a touch that fails mid-gesture or goes quiet for 5 s is released.
 
 ---
 
@@ -186,8 +193,7 @@ and ranges from the structure, values and availability merged in from current.
 }
 ```
 
-`kind` is one of `slider | enum | colors | int | bool | multi_slider` (the last
-read-only). A node missing from the current read still ships with `value: null`,
+`kind` is one of `slider | enum | colors | multi_slider` (the last read-only). A node missing from the current read still ships with `value: null`,
 `available: false`.
 
 `fibbers_bridge.tv_settings_get` — `{ entry_id, node_ids: [int] }` → `{ nodes: [...] }`.
