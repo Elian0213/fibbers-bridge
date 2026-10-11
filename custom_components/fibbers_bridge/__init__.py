@@ -50,6 +50,7 @@ from .ambilight import (
 )
 from . import macros, probe, remote, tvsettings
 from .jointspace import JointSpaceError
+from .touch import lane_for
 from .tvprobe import probe_capabilities
 from .const import (
     AMBILIGHT_MODES,
@@ -216,10 +217,10 @@ def _register_global(hass: HomeAssistant) -> None:
         return
 
     async def _svc_swipe(call: ServiceCall) -> None:
-        await _do_swipe(_resolve_atv(hass, call.data["device_id"]), call.data)
+        await _do_swipe(hass, call.data)
 
     async def _svc_touch(call: ServiceCall) -> None:
-        await _do_touch(_resolve_atv(hass, call.data["device_id"]), call.data)
+        await _do_touch(hass, call.data)
 
     async def _svc_click(call: ServiceCall) -> None:
         await _do_click(_resolve_atv(hass, call.data["device_id"]), call.data)
@@ -536,10 +537,14 @@ def _require_feature(atv: Any, feature_name: str) -> None:
     if feature is None:
         return
     try:
-        available = atv.features.in_state(FeatureState.Available, feature)
+        # Only refuse what pyatv positively rules out; an `Unknown` state still
+        # gets a try (the call itself then fails cleanly if it really can't).
+        missing = atv.features.in_state(
+            [FeatureState.Unsupported, FeatureState.Unavailable], feature
+        )
     except Exception:  # noqa: BLE001 - feature API differs across pyatv versions
         return
-    if not available:
+    if missing:
         raise ServiceValidationError(
             f"This Apple TV does not support {feature_name} "
             "(needs the Companion protocol / tvOS 15+)."
@@ -549,31 +554,47 @@ def _require_feature(atv: Any, feature_name: str) -> None:
 # --- pyatv touch calls ---------------------------------------------------------
 
 
-async def _do_swipe(atv: Any, data: dict[str, Any]) -> None:
+# Swipes and touch phases for one device go through its TouchLane (touch.py): in
+# order, holds coalesced, every call time-boxed, and a stuck press released.
+
+
+async def _do_swipe(hass: HomeAssistant, data: dict[str, Any]) -> None:
+    device_id = data["device_id"]
+    atv = _resolve_atv(hass, device_id)
     _require_feature(atv, "Swipe")
     try:
-        await atv.touch.swipe(
-            data["start_x"],
-            data["start_y"],
-            data["end_x"],
-            data["end_y"],
-            data.get("duration_ms", 500),
+        await lane_for(hass.data[DOMAIN], device_id).exclusive(
+            lambda: atv.touch.swipe(
+                data["start_x"],
+                data["start_y"],
+                data["end_x"],
+                data["end_y"],
+                data.get("duration_ms", 500),
+            )
         )
     except Exception as err:  # noqa: BLE001 - surface pyatv errors cleanly
         raise HomeAssistantError(f"Apple TV swipe failed: {err}") from err
 
 
-async def _do_touch(atv: Any, data: dict[str, Any]) -> None:
+async def _do_touch(hass: HomeAssistant, data: dict[str, Any]) -> None:
     from pyatv.const import TouchAction  # noqa: PLC0415
 
-    _require_feature(atv, "TouchAction")
-    mode = {
+    device_id = data["device_id"]
+    _require_feature(_resolve_atv(hass, device_id), "Action")
+    modes = {
         "press": TouchAction.Press,
         "hold": TouchAction.Hold,
         "release": TouchAction.Release,
-    }[data["mode"]]
+    }
+
+    async def send(mode: str, x: int, y: int) -> None:
+        # Re-resolved per phase, so a queued phase reaches a reconnected Apple TV.
+        await _resolve_atv(hass, device_id).touch.action(x, y, modes[mode])
+
     try:
-        await atv.touch.action(data["x"], data["y"], mode)
+        await lane_for(hass.data[DOMAIN], device_id).touch(
+            send, data["mode"], data["x"], data["y"]
+        )
     except Exception as err:  # noqa: BLE001
         raise HomeAssistantError(f"Apple TV touch failed: {err}") from err
 
@@ -581,7 +602,7 @@ async def _do_touch(atv: Any, data: dict[str, Any]) -> None:
 async def _do_click(atv: Any, data: dict[str, Any]) -> None:
     from pyatv.const import InputAction  # noqa: PLC0415
 
-    _require_feature(atv, "TouchClick")
+    _require_feature(atv, "Click")
     action = {
         "single": InputAction.SingleTap,
         "double": InputAction.DoubleTap,
@@ -610,7 +631,7 @@ async def _ws_swipe(
 ) -> None:
     """Stream a swipe from a custom card (see docs/API.md)."""
     try:
-        await _do_swipe(_resolve_atv(hass, msg["device_id"]), msg)
+        await _do_swipe(hass, msg)
     except HomeAssistantError as err:
         connection.send_error(msg["id"], "fibbers_bridge_error", str(err))
         return
@@ -631,7 +652,7 @@ async def _ws_touch(
 ) -> None:
     """Stream a press/hold/release from a custom card (see docs/API.md)."""
     try:
-        await _do_touch(_resolve_atv(hass, msg["device_id"]), msg)
+        await _do_touch(hass, msg)
     except HomeAssistantError as err:
         connection.send_error(msg["id"], "fibbers_bridge_error", str(err))
         return
