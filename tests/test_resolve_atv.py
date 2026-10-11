@@ -2,9 +2,9 @@
 
 This is the function that broke in 0.1.0: it read the live pyatv connection only
 from `hass.data["apple_tv"][entry_id]`, but core moved the manager onto
-`entry.runtime_data` in HA 2024.6, so every service call failed. 0.1.1 reads
-`runtime_data` first with the legacy dict as fallback. These tests pin both paths
-down so the next core refactor is caught here, not by a user.
+`entry.runtime_data` in HA 2024.6, so every service call failed. The bridge now
+requires HA 2025.1 and reads only `runtime_data`. These tests pin that path down
+so the next core refactor is caught here, not by a user.
 """
 
 from __future__ import annotations
@@ -44,17 +44,6 @@ async def test_resolves_via_runtime_data(hass: HomeAssistant) -> None:
     entry = MockConfigEntry(domain=APPLE_TV_DOMAIN)
     device_id = _add_apple_tv_device(hass, entry)
     entry.runtime_data = _Manager(atv)
-
-    assert _resolve_atv(hass, device_id) is atv
-
-
-async def test_resolves_via_legacy_hass_data(hass: HomeAssistant) -> None:
-    """Pre-2024.6 fallback: manager only in `hass.data['apple_tv'][entry_id]`."""
-    atv = object()
-    entry = MockConfigEntry(domain=APPLE_TV_DOMAIN)
-    device_id = _add_apple_tv_device(hass, entry)
-    entry.runtime_data = None
-    hass.data[APPLE_TV_DOMAIN] = {entry.entry_id: _Manager(atv)}
 
     assert _resolve_atv(hass, device_id) is atv
 
